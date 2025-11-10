@@ -86,7 +86,25 @@ class NeuralNetwork:
         def init_weights_from_inputs_to_hidden_layers(self):
             weight_num = 0                                  #TODO continuare da qui
 
-        
+
+#=============================
+# Activation Functions
+#=============================
+
+def sigmoid(x, a):
+    return 1 / (1 + np.exp(-x*a))
+
+def tanh(x, a):
+    return np.tanh(x*a)
+
+def relu(x):
+    return np.maximum(0, x)
+
+def softmax(x):
+    return np.log(1 + np.e**x)
+
+def tanh_like(x, n):
+    return np.sign(x) * (1 + ((2**n * np.abs(x) - np.floor(2**n * np.abs(x)))/2 - 1)/(2**(np.floor(2**n * np.abs(x)))))
 
 
 
