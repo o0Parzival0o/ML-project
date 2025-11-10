@@ -21,7 +21,9 @@
   },
   "paths": {
     "train_data": "MONK files/monks-1.train",
-    "test_data": "MONK files/monks-1.test"
+    "test_data": "MONK files/monks-1.test",
+    "exam_file": "ML-CUP25-TR.csv",
+    "CUP_file": "ML-CUP25-TS.csv"
   },
   "general": {
     "seed": 42
