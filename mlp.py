@@ -37,7 +37,8 @@ class NeuralNetwork:
 
         for neurons in neurons_per_layer:
             self.hidden_layers.append(NeuronLayer(neurons))
-
+        def init_weights_from_inputs_to_hidden_layers(self):
+            weight_num = 0#TODO continuare da qui
 
         
 
@@ -72,6 +73,7 @@ def preprocess_monk():
 
 config = load_config_json("config.json")
 one_hot_encoding,targets,input_units_number = preprocess_monk()
+
 
 
 
