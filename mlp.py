@@ -128,7 +128,6 @@ class NeuralNetwork:
             print(neuron.weights)
 
 
-    
 
 
             
@@ -155,6 +154,14 @@ def softmax(x):
 def tanh_like(x, n):
     return np.sign(x) * (1 + ((2**n * np.abs(x) - np.floor(2**n * np.abs(x)))/2 - 1)/(2**(np.floor(2**n * np.abs(x)))))
 
+def MSE(o, t):
+    l = t.shape[0]
+    return 1/l * np.sum(np.sum((o-t)**2, axis=1), axis=0)
+
+def MEE(o, t):
+    l = t.shape[0]
+    return 1/l * np.sum(np.sqrt(np.sum((o-t)**2, axis=1)), axis=0)
+
 
 
 #=============================
@@ -176,5 +183,6 @@ if __name__ == "__main__":
 
     mlp.print_network()
     # one_hot_encoding,targets,input_units_number = preprocess_exam_file()
+
 
 
