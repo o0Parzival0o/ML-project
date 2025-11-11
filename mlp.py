@@ -68,15 +68,14 @@ def create_random_extractor(method):
 
 class Neuron:
     """ Represents a single neuron in the neural network. """
-    def __init__(self, bias):
-        self.bias = bias
+    def __init__(self):
+        self.bias = extractor()
         self.weights = []
     
 class NeuronLayer:
     """ Represents a layer of neurons in the neural network. """
     def __init__(self, neurons):
-        self.bias = extractor()
-        self.neurons = [Neuron(self.bias) for _ in range(neurons)]
+        self.neurons = [Neuron() for _ in range(neurons)]
         self.num_neurons = neurons
 
 class NeuralNetwork:
@@ -117,12 +116,12 @@ class NeuralNetwork:
         # for neuron in 
     def print_network(self):
         print(f'the net has {self.num_inputs} input neurons')
-        print(f'the net has {self.neurons_per_layer} hidden layers')
+        print(f'the net has {len(self.neurons_per_layer)} hidden layers')
         for i,layer in enumerate(self.hidden_layers):
             print(f'hidden layer {i} weights:')
             for neuron in layer.neurons:
                 print(neuron.weights) 
-        print(f'the net has {self.num_outputs} input neurons')
+        print(f'the net has {self.num_outputs} output neurons')
         print(f'weights connecting last hidden layer to output:')
         for neuron in self.output_layer.neurons:
             print(neuron.weights)
