@@ -50,7 +50,7 @@ def preprocess_exam_file():
     patterns = patterns.drop(data.columns[0], axis=1)
     # print(patterns.head(5))
 
-    input_units_number = patterns.shape
+    input_units_number = patterns.shape[1]
     return targets,input_units_number
 
 
@@ -60,31 +60,38 @@ def preprocess_exam_file():
 
 class Neuron:
     """ Represents a single neuron in the neural network. """
-    def __init__(self, bias):
-        self.bias = bias
+    def __init__(self):
+        self.bias = random.uniform(-1, 1)
         self.weights = []
     
 class NeuronLayer:
     """ Represents a layer of neurons in the neural network. """
-    def __init__(self, neurons):
-        self.bias = random.random()
-        self.neurons = [Neuron(self.bias) for _ in range(neurons)]
+    def __init__(self, num_neurons, num_inputs_per_neuron):
+        self.neurons = []
+        for _ in range(num_neurons):
+            neuron = Neuron()
+            neuron.weights = [random.uniform(-1, 1) for _ in range(num_inputs_per_neuron)]
+            self.neurons.append(neuron)
 
 class NeuralNetwork:
     """ Represents a multi-layer perceptron neural network. """
-    def __init__(self, num_inputs, num_hidden, num_outputs, neurons_per_layer):
-        self.num_inputs = num_inputs
-        # self.hidden = NeuronLayer()                       # TODO valutare se ha senso implementare un diverso numero di neuroni per hidden layer
-        # self.num_outputs= num_outputs
-
+    def __init__(self, num_inputs,  neurons_per_layer, num_outputs):
+        # hidden layers
+        input_size = num_inputs
         self.hidden_layers = []
-        self.output_layer = NeuronLayer(num_outputs)
 
         for neurons in neurons_per_layer:
-            self.hidden_layers.append(NeuronLayer(neurons))
+            layer = NeuronLayer(neurons, input_size)
+            self.hidden_layers.append(layer)
+            input_size = neurons
+        
+        # output layer
+        self.output_layer = NeuronLayer(num_outputs, input_size)
+
 
         def init_weights_from_inputs_to_hidden_layers(self):
             weight_num = 0                                  #TODO continuare da qui
+        
 
 
 #=============================
@@ -100,8 +107,8 @@ def tanh(x, a):
 def relu(x):
     return np.maximum(0, x)
 
-def softmax(x):
-    return np.log(1 + np.e**x)
+def softplus(x):
+    return np.log1p(np.exp(-np.abs(x))) + np.maximum(x, 0)
 
 def tanh_like(x, n):
     return np.sign(x) * (1 + ((2**n * np.abs(x) - np.floor(2**n * np.abs(x)))/2 - 1)/(2**(np.floor(2**n * np.abs(x)))))
@@ -114,14 +121,8 @@ def MEE(o, t):
     l = t.shape[0]
     return 1/l * np.sum(np.sqrt(np.sum((o-t)**2, axis=1)), axis=0)
 
-
-
-
 if __name__ == "__main__":
 
     config = load_config_json("config.json")
-    one_hot_encoding,targets,input_units_number = preprocess_monk()
-
+    one_hot_encoding,targets,input_units_number = preprocess_monk()    
     # one_hot_encoding,targets,input_units_number = preprocess_exam_file()
-
-
