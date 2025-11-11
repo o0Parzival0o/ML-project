@@ -88,7 +88,7 @@ class NeuralNetwork:
 
 
 #=============================
-# Activation Functions
+# Activation & Loss Functions
 #=============================
 
 def sigmoid(x, a):
@@ -105,6 +105,14 @@ def softmax(x):
 
 def tanh_like(x, n):
     return np.sign(x) * (1 + ((2**n * np.abs(x) - np.floor(2**n * np.abs(x)))/2 - 1)/(2**(np.floor(2**n * np.abs(x)))))
+
+def MSE(o, t):
+    l = t.shape[0]
+    return 1/l * np.sum(np.sum((o-t)**2, axis=1), axis=0)
+
+def MEE(o, t):
+    l = t.shape[0]
+    return 1/l * np.sum(np.sqrt(np.sum((o-t)**2, axis=1)), axis=0)
 
 
 
