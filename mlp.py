@@ -61,22 +61,13 @@ def preprocess_exam_file():
     input_units_number = patterns.shape[0]
     return targets,input_units_number
 
-#can choose between different extraction methods for the weights/biases
-def create_random_extractor(method):
-    if(method == "standard"):
-        def extractor_function():
-            return random.uniform(-0.7,0.7)
-        return extractor_function
-    else:
-        raise ValueError("Invalid method.")
-
 
 #=============================
 # Neural Network
 #=============================
 
 class Neuron:
-    """ Represents a single neuron in the neural network."""
+    """ Represents a single neuron in the neural network. """
     def __init__(self, bias):
         self.bias = bias
         self.weights = []
@@ -84,9 +75,8 @@ class Neuron:
 class NeuronLayer:
     """ Represents a layer of neurons in the neural network."""
     def __init__(self, neurons):
-        self.bias = extractor()
+        self.bias = random.random()
         self.neurons = [Neuron(self.bias) for _ in range(neurons)]
-        self.num_neurons = neurons
 
 class NeuralNetwork:
     """ Represents a multi-layer perceptron neural network."""
@@ -98,6 +88,8 @@ class NeuralNetwork:
 
         #TODO più in la col training valutare se ha senso accorpare hidden layers con input e output in un unica struttura layers
 
+        self.neurons_per_layer = neurons_per_layer #neurons per HIDDEN layer
+        self.hidden_layers_number = len(neurons_per_layer) #how many hidden layers
         self.hidden_layers = []
         self.output_layer = []
 
@@ -141,7 +133,7 @@ class NeuralNetwork:
 
 
 #=============================
-# Activation & Loss Functions
+# Activation Functions
 #=============================
 
 def sigmoid(x, a):
@@ -153,8 +145,11 @@ def tanh(x, a):
 def relu(x):
     return np.maximum(0, x)
 
-def softmax(x):
-    return np.log(1 + np.e**x)
+def softplus(x):
+    return np.log1p(np.exp(-np.abs(x))) + np.maximum(x, 0)
+
+def softplus(x):
+    return np.log1p(np.exp(-np.abs(x))) + np.maximum(x, 0)
 
 def softplus(x):
     return np.log1p(np.exp(-np.abs(x))) + np.maximum(x, 0)
@@ -169,6 +164,12 @@ def MSE(o, t):
 def MEE(o, t):
     l = t.shape[0]
     return 1/l * np.sum(np.sqrt(np.sum((o-t)**2, axis=1)), axis=0)
+
+
+
+#=============================
+# Initialization Flags
+#=============================
 
 
 #=============================
