@@ -148,8 +148,8 @@ def tanh(x, a):
 def relu(x):
     return np.maximum(0, x)
 
-def softmax(x):
-    return np.log(1 + np.e**x)
+def softplus(x):
+    return np.log1p(np.exp(-np.abs(x))) + np.maximum(x, 0)
 
 def tanh_like(x, n):
     return np.sign(x) * (1 + ((2**n * np.abs(x) - np.floor(2**n * np.abs(x)))/2 - 1)/(2**(np.floor(2**n * np.abs(x)))))
@@ -183,6 +183,7 @@ if __name__ == "__main__":
 
     mlp.print_network()
     # one_hot_encoding,targets,input_units_number = preprocess_exam_file()
+
 
 
 
