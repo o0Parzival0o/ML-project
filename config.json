@@ -22,10 +22,10 @@
       "method": "standard"
   },
   "paths": {
-      "train_data": "MONK files/monks-1.train",
-      "test_data": "MONK files/monks-1.test",
-      "exam_file": "ML-CUP25-TR.csv",
-      "CUP_file": "ML-CUP25-TS.csv"
+      "MONK_train_data": "MONK files/monks-1.train",
+      "MONK_test_data": "MONK files/monks-1.test",
+      "CUP_train_data": "ML-25-PRJ lecture amp package-20251112/ML-CUP25-TR.csv",
+      "CUP_test_data": "ML-25-PRJ lecture amp package-20251112/ML-CUP25-TS.csv"
   },
   "general": {
       "seed": 42
