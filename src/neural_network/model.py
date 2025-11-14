@@ -14,12 +14,16 @@ class NeuronLayer:
     def __init__(self, neurons):
         self.neurons = [Neuron() for _ in range(neurons)]
         self.num_neurons = neurons
+        self.weights = None
+        self.biases = None
+        self.outputs = None
 
 class NeuralNetwork:
     """ Represents a multi-layer perceptron neural network. """
-    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar, extractor, activation="sigmoid"):
+    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar, extractor, activation=["relu", "sigmoid"]):
         self.extractor = extractor
-        self.activation = actfun.activation_functions[activation]
+        self.hidden_activation = actfun.activation_functions[activation[0]]
+        self.output_activation = actfun.activation_functions[activation[1]]
 
         self.num_inputs = num_inputs
         self.neurons_per_layer = neurons_per_layer                      #neurons per HIDDEN layer
@@ -41,11 +45,17 @@ class NeuralNetwork:
             self.init_weights(hidden_layer, num_inputs)
             self.hidden_layers.append(hidden_layer)
 
+            hidden_layer.weights = np.array([neuron.weights for neuron in hidden_layer.neurons])
+            hidden_layer.biases = np.array([neuron.bias for neuron in hidden_layer.neurons])
+
         # initialize output neuron and weights
-        output_layer = NeuronLayer(num_outputs)
-        self.init_weights(output_layer, self.hidden_layers[-1].num_neurons)
-        self.output_layer = output_layer
+        self.output_layer = NeuronLayer(num_outputs)
+        self.init_weights(self.output_layer, self.hidden_layers[-1].num_neurons)
+
+        self.output_layer.weights = np.array([neuron.weights for neuron in self.output_layer.neurons])
+        self.output_layer.biases = np.array([neuron.bias for neuron in self.output_layer.neurons])
         
+
         self.learning_rate = training_hyperpar[0]
         self.momentum = training_hyperpar[1]
         self.batch_size = training_hyperpar[2]
@@ -77,16 +87,24 @@ class NeuralNetwork:
         current_inputs = inputs
 
         # hidden layers
-        for layer in self.hidden_layers:
-            weights = np.array([neuron.weights for neuron in layer.neurons])
-            biases = np.array([neuron.bias for neuron in layer.neurons])
-        
-            current_inputs = self.activation(np.dot(weights, current_inputs) + biases)
+        for layer in self.hidden_layers:        
+            current_inputs = self.hidden_activation(layer.weights @ current_inputs + layer.biases)
 
-        # output layer
-        weights = np.array([neuron.weights for neuron in self.output_layer.neurons])
-        biases = np.array([neuron.bias for neuron in self.output_layer.neurons])
-    
-        outputs = self.activation(np.dot(weights, current_inputs) + biases)
+        # output layer    
+        outputs = self.output_activation(self.output_layer.weights @ current_inputs + self.output_layer.biases)
 
-        return np.array(outputs)
+        return outputs
+
+    # def back_prop(self, target, d_act_func):
+    #     delta_weights = []
+    #     for layer in self.layers:
+    #         previous_delta = None
+    #         net = np.sum(layer.weights @ layer.outputs)
+    #         if layer == self.output_layer:
+    #             delta_k = (target - layer.outputs) * d_act_func(net)
+    #             delta_weights.append(delta_k*layer.outputs)
+    #         elif layer in self.hidden_layers:
+    #             delta_j = np.sum(previous_delta * layer.weights) * d_act_func(net)
+    #         else:
+    #             raise Exception("Layer not recognized")
+    #         previous_delta = delta_weights
