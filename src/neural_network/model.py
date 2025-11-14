@@ -1,5 +1,5 @@
-from utils import plot_network                      # (da eliminare prima di mandare a Micheli)
-
+from utils import plot_network # (da eliminare prima di mandare a Micheli)
+import activations as actfun
 import numpy as np
 
 
@@ -17,8 +17,9 @@ class NeuronLayer:
 
 class NeuralNetwork:
     """ Represents a multi-layer perceptron neural network. """
-    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar, extractor):
+    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar, extractor, activation="sigmoid"):
         self.extractor = extractor
+        self.activation = actfun.activation_functions[activation]
 
         self.num_inputs = num_inputs
         self.neurons_per_layer = neurons_per_layer                      #neurons per HIDDEN layer
@@ -69,5 +70,28 @@ class NeuralNetwork:
             result.append(f'\t\t{neuron}:\t'+'\t'.join(f'{weight:.2f}' for weight in neuron.weights))
         return '\n'.join(result)
     
-    def plot(self):                                 # (da eliminare prima di mandare a Micheli)
+    def plot(self): # (da eliminare prima di mandare a Micheli)
         plot_network(self)
+
+    def feed_forward(self, inputs):
+        current_inputs = inputs
+
+        # hidden layers
+        for layer in self.hidden_layers:
+            next_values = []
+            
+            for neuron in layer.neurons:
+                weighted_sum = neuron.bias + np.dot(neuron.weights, current_inputs)
+                activated = self.activation(weighted_sum)
+                
+                next_values.append(activated)
+
+            current_inputs = next_values
+
+        # output layer
+        outputs = []
+        for neuron in self.output_layer.neurons:
+            weighted_sum = neuron.bias + np.dot(neuron.weights, current_inputs)
+            outputs.append(self.activation(weighted_sum))
+
+        return np.array(outputs)

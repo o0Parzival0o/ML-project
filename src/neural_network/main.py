@@ -32,6 +32,8 @@ if __name__ == "__main__":
                        neurons_per_layer=config["architecture"]["neurons_per_layer"],
                        training_hyperpar=training_hyperpar,
                        extractor=extractor)
+    
+    print(nn.feed_forward(one_hot_encoding_train.iloc[0].to_numpy()))
 
-    print(nn)
-    nn.plot()                                   # (da eliminare prima di mandare a Micheli)
+    #print(nn)
+    #nn.plot()                                   # (da eliminare prima di mandare a Micheli)
