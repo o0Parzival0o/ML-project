@@ -78,20 +78,15 @@ class NeuralNetwork:
 
         # hidden layers
         for layer in self.hidden_layers:
-            next_values = []
-            
-            for neuron in layer.neurons:
-                weighted_sum = neuron.bias + np.dot(neuron.weights, current_inputs)
-                activated = self.activation(weighted_sum)
-                
-                next_values.append(activated)
-
-            current_inputs = next_values
+            weights = np.array([neuron.weights for neuron in layer.neurons])
+            biases = np.array([neuron.bias for neuron in layer.neurons])
+        
+            current_inputs = self.activation(np.dot(weights, current_inputs) + biases)
 
         # output layer
-        outputs = []
-        for neuron in self.output_layer.neurons:
-            weighted_sum = neuron.bias + np.dot(neuron.weights, current_inputs)
-            outputs.append(self.activation(weighted_sum))
+        weights = np.array([neuron.weights for neuron in self.output_layer.neurons])
+        biases = np.array([neuron.bias for neuron in self.output_layer.neurons])
+    
+        outputs = self.activation(np.dot(weights, current_inputs) + biases)
 
         return np.array(outputs)
