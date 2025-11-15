@@ -16,14 +16,21 @@ class NeuronLayer:
         self.num_neurons = neurons
         self.weights = None
         self.biases = None
+
+        self.inputs = None
+        self.net = None
         self.outputs = None
+
+        self.deltas = None
 
 class NeuralNetwork:
     """ Represents a multi-layer perceptron neural network. """
     def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar, extractor, activation=["relu", "sigmoid"]):
         self.extractor = extractor
-        self.hidden_activation = actfun.activation_functions[activation[0]]
-        self.output_activation = actfun.activation_functions[activation[1]]
+        self.hidden_activation = actfun.activation_functions[activation[0]][0]
+        self.d_hidden_activation = actfun.activation_functions[activation[0]][1]
+        self.output_activation = actfun.activation_functions[activation[1]][0]
+        self.d_output_activation = actfun.activation_functions[activation[1]][1]
 
         self.num_inputs = num_inputs
         self.neurons_per_layer = neurons_per_layer                      #neurons per HIDDEN layer
@@ -54,6 +61,8 @@ class NeuralNetwork:
 
         self.output_layer.weights = np.array([neuron.weights for neuron in self.output_layer.neurons])
         self.output_layer.biases = np.array([neuron.bias for neuron in self.output_layer.neurons])
+
+        self.layers = self.hidden_layers + [self.output_layer]
         
 
         self.learning_rate = training_hyperpar[0]
@@ -87,24 +96,48 @@ class NeuralNetwork:
         current_inputs = inputs
 
         # hidden layers
-        for layer in self.hidden_layers:        
-            current_inputs = self.hidden_activation(layer.weights @ current_inputs + layer.biases)
+        for layer in self.hidden_layers:
+            layer.inputs = current_inputs
+            layer.net = layer.weights @ layer.inputs + layer.biases
+            layer.outputs = self.hidden_activation(layer.net)
+            current_inputs = layer.outputs
 
-        # output layer    
-        outputs = self.output_activation(self.output_layer.weights @ current_inputs + self.output_layer.biases)
+        # output layer
+        self.output_layer.inputs = current_inputs
+        self.output_layer.net = self.output_layer.weights @ self.output_layer.inputs + self.output_layer.biases
+        self.output_layer.outputs = self.output_activation(self.output_layer.net)
 
-        return outputs
+        return self.output_layer.outputs
 
-    # def back_prop(self, target, d_act_func):
-    #     delta_weights = []
-    #     for layer in self.layers:
-    #         previous_delta = None
-    #         net = np.sum(layer.weights @ layer.outputs)
-    #         if layer == self.output_layer:
-    #             delta_k = (target - layer.outputs) * d_act_func(net)
-    #             delta_weights.append(delta_k*layer.outputs)
-    #         elif layer in self.hidden_layers:
-    #             delta_j = np.sum(previous_delta * layer.weights) * d_act_func(net)
-    #         else:
-    #             raise Exception("Layer not recognized")
-    #         previous_delta = delta_weights
+    def back_prop(self, target):
+        previous_delta = None
+        previous_weights = None
+        for layer in reversed(self.layers):
+            # output layer
+            if layer == self.output_layer:
+                layer.deltas = (target - layer.outputs) * self.d_output_activation(layer.net)                      # delta_k
+            # hidden layers
+            elif layer in self.hidden_layers:
+                layer.deltas = (previous_weights.T @ previous_delta) * self.d_hidden_activation(layer.net)          # delta_j
+            else:
+                raise Exception("Layer not recognized")
+            
+            previous_delta, previous_weights = layer.deltas, layer.weights
+
+
+    def weights_update(self):
+        for layer in self.layers:
+            layer.weights = layer.weights + self.learning_rate * np.outer(layer.deltas, layer.inputs)
+            layer.biases = layer.biases + self.learning_rate * layer.deltas
+
+    def train(self, X, T):
+        for x, t in zip(X[:], T[:]):
+            for _ in range(5):
+                o = self.feed_forward(x)
+                delta = self.back_prop(t)
+                self.weights_update()
+                print(o)
+            o = self.feed_forward(x)
+            print(o)
+            print(t)
+            print('-'*30)

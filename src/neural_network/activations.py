@@ -26,8 +26,8 @@ def d_softplus(x):
 
 
 activation_functions = {
-    "sigmoid": sigmoid,
-    "tanh": tanh,
-    "relu": relu,
-    "softplus": softplus
+    "sigmoid": [sigmoid, d_sigmoid],
+    "tanh": [tanh, d_tanh],
+    "relu": [relu, d_relu],
+    "softplus": [softplus, d_softplus]
 }

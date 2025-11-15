@@ -1,6 +1,6 @@
 {
   "architecture": {
-      "output_units": 2,
+      "output_units": 1,
       "neurons_per_layer": [3,2,3]
   },
   "functions": {
