@@ -23,6 +23,9 @@ class NeuronLayer:
 
         self.deltas = None
 
+        self.weights_grad_acc = None
+        self.bias_grad_acc = None
+
 class NeuralNetwork:
     """ Represents a multi-layer perceptron neural network. """
     def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar, extractor, activation=["relu", "sigmoid"]):
@@ -115,7 +118,7 @@ class NeuralNetwork:
         for layer in reversed(self.layers):
             # output layer
             if layer == self.output_layer:
-                layer.deltas = (target - layer.outputs) * self.d_output_activation(layer.net)                      # delta_k
+                layer.deltas = (target - layer.outputs) * self.d_output_activation(layer.net)   #TODO guardare se le formule di attivazione sono corrette                 # delta_k
             # hidden layers
             elif layer in self.hidden_layers:
                 layer.deltas = (previous_weights.T @ previous_delta) * self.d_hidden_activation(layer.net)          # delta_j
@@ -125,19 +128,40 @@ class NeuralNetwork:
             previous_delta, previous_weights = layer.deltas, layer.weights
 
 
-    def weights_update(self):
-        for layer in self.layers:
-            layer.weights = layer.weights + self.learning_rate * np.outer(layer.deltas, layer.inputs)
-            layer.biases = layer.biases + self.learning_rate * layer.deltas
+    def weights_update(self,batch,l):
+        if(batch == "full"):
+            for layer in self.layers:
+                layer.weights = (layer.weights + self.learning_rate * (layer.weights_grad_acc/l)) 
+                layer.biases = (layer.biases + self.learning_rate * (layer.bias_grad_acc/l)) 
 
-    def train(self, X, T):
-        for x, t in zip(X[:], T[:]):
-            for _ in range(5):
-                o = self.feed_forward(x)
-                delta = self.back_prop(t)
-                self.weights_update()
-                print(o)
-            o = self.feed_forward(x)
-            print(o)
-            print(t)
-            print('-'*30)
+        # for layer in self.layers:
+        #     layer.weights = layer.weights + self.learning_rate * np.outer(layer.deltas, layer.inputs)
+        #     layer.biases = layer.biases + self.learning_rate * layer.deltas 
+
+    #TODO usare early stopping o comunque altri parametri per capire dopo quante epoche fermarsi
+
+    def train(self, X, T,epochs,batch):
+        for i in range(epochs):
+            if(batch == "full"):
+                for layer in self.layers:
+                    layer.weights_grad_acc = np.zeros_like(layer.weights)
+                    layer.bias_grad_acc = np.zeros_like(layer.biases)
+                for x,t in zip(X,T):
+                    o = self.feed_forward(x)
+                    deltas = self.back_prop(t)
+
+                    for layer in self.layers:
+                        layer.weights_grad_acc += np.outer(layer.deltas, layer.inputs)
+                        layer.bias_grad_acc += layer.deltas
+
+                self.weights_update(batch,len(X))
+        # for x, t in zip(X,T): #TODO introdurre shuffling nel training on line
+        #     # for _ in range(5):
+        #     o = self.feed_forward(x)
+        #     delta = self.back_prop(t)
+        #     self.weights_update()
+        #     print(o)
+        #     o = self.feed_forward(x)
+        #     print(o)
+        #     print(t)
+        #     print('-'*30)

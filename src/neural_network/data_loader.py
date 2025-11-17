@@ -58,15 +58,15 @@ def data_loader(file_path, batch_size='full', shuffle=False, drop_last=False):
         X = X[idx]
         t = t[idx]
 
-    if batch_size == 'full':
-        return X, t, input_units
-    elif type(batch_size) is int:                                   # TODO rivedere funzionamento
-        if drop_last:
-            X_batch = X[:batch_size]
-            t_batch = t[:batch_size]
-        return X_batch, t_batch, input_units
-    else:
-        raise TypeError('batch_size type incorrect')
+    # if batch_size == 'full':
+    return X, t, input_units
+    # elif type(batch_size) is int:                                   # TODO rivedere funzionamento
+    #     if drop_last:
+    #         X_batch = X[:batch_size]
+    #         t_batch = t[:batch_size]
+    #     return X_batch, t_batch, input_units
+    # else:
+    #     raise TypeError('batch_size type incorrect')
 
 
     
