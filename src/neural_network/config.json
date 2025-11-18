@@ -5,18 +5,23 @@
   },
   "functions": {
       "hidden": "tanh",
-      "output": "tanh"
+      "output": "tanh",
+      "loss": "MSE"
   },
   "training": {
-      "epochs": 3,
+      "epochs": 50,
       "learning_rate": 0.05,
       "momentum": 0.85,
-      "batch_size": "full",
+      "batch": {
+          "batch_size": "full",
+          "drop_last": true
+      },
       "early_stopping": {
           "enabled": true,
           "patience": 10,
           "monitor": "val_loss"
-      }
+      },
+      "vl": 0.2
   },
   "initialization": {
       "method": "standard"

@@ -25,7 +25,7 @@ def preprocess_monk(path_file):
     # print(one_hot_encoding)
 
     input_units_number = one_hot_encoding.shape[1]
-    return one_hot_encoding,targets,input_units_number
+    return one_hot_encoding, targets, input_units_number
 
 def preprocess_exam_file(file_path):
     """ Preprocess the exam dataset.  Returns the targets and the number of input units."""
@@ -43,7 +43,7 @@ def preprocess_exam_file(file_path):
     input_units_number = X.shape[1]
     return X, targets, input_units_number
 
-def data_loader(file_path, batch_size='full', shuffle=False, drop_last=False):
+def data_loader(file_path, shuffle=False):
     if "monks" in file_path:
         X, t, input_units = preprocess_monk(file_path)
     else:
@@ -58,15 +58,7 @@ def data_loader(file_path, batch_size='full', shuffle=False, drop_last=False):
         X = X[idx]
         t = t[idx]
 
-    # if batch_size == 'full':
     return X, t, input_units
-    # elif type(batch_size) is int:                                   # TODO rivedere funzionamento
-    #     if drop_last:
-    #         X_batch = X[:batch_size]
-    #         t_batch = t[:batch_size]
-    #     return X_batch, t_batch, input_units
-    # else:
-    #     raise TypeError('batch_size type incorrect')
 
 
     

@@ -1,6 +1,10 @@
 from utils import plot_network # (da eliminare prima di mandare a Micheli)
 import activations as actfun
+import losses
+
 import numpy as np
+
+np.random.seed(42)
 
 
 class Neuron:
@@ -28,7 +32,7 @@ class NeuronLayer:
 
 class NeuralNetwork:
     """ Represents a multi-layer perceptron neural network. """
-    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar, extractor, activation=["relu", "sigmoid"]):
+    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar, extractor, activation=["relu", "sigmoid"], early_stopping=[False]):
         self.extractor = extractor
         self.hidden_activation = actfun.activation_functions[activation[0]][0]
         self.d_hidden_activation = actfun.activation_functions[activation[0]][1]
@@ -68,9 +72,15 @@ class NeuralNetwork:
         self.layers = self.hidden_layers + [self.output_layer]
         
 
-        self.learning_rate = training_hyperpar[0]
-        self.momentum = training_hyperpar[1]
-        self.batch_size = training_hyperpar[2]
+        self.learning_rate = training_hyperpar["learning_rate"]
+        self.momentum = training_hyperpar["momentum"]
+        # self.batch_size = training_hyperpar[2] TODO rimuovere se non serve (o nel caso leggere il valore corretto)
+
+        self.vl=training_hyperpar["vl"]
+
+        self.early_stopping = early_stopping["enabled"]
+        self.early_stopping_patience = early_stopping["patience"]
+        self.early_stopping_monitor = early_stopping["monitor"]
 
     def init_weights(self, layer, num_prev_inputs):
         for neuron in layer.neurons:
@@ -128,40 +138,103 @@ class NeuralNetwork:
             previous_delta, previous_weights = layer.deltas, layer.weights
 
 
-    def weights_update(self,batch,l):
-        if(batch == "full"):
-            for layer in self.layers:
-                layer.weights = (layer.weights + self.learning_rate * (layer.weights_grad_acc/l)) 
-                layer.biases = (layer.biases + self.learning_rate * (layer.bias_grad_acc/l)) 
-
-        # for layer in self.layers:
-        #     layer.weights = layer.weights + self.learning_rate * np.outer(layer.deltas, layer.inputs)
-        #     layer.biases = layer.biases + self.learning_rate * layer.deltas 
+    def weights_update(self, l):
+        for layer in self.layers:
+            layer.weights = (layer.weights + self.learning_rate * (layer.weights_grad_acc/l)) 
+            layer.biases = (layer.biases + self.learning_rate * (layer.bias_grad_acc/l))
 
     #TODO usare early stopping o comunque altri parametri per capire dopo quante epoche fermarsi
 
-    def train(self, X, T,epochs,batch):
+    def train(self, X, T, train_args, loss_func):
+
+        batch_size = train_args["batch"]["batch_size"]
+        batch_droplast = train_args["batch"]["drop_last"]
+        epochs = train_args["epochs"]
+
+        loss_func = losses.losses_functions[loss_func]
+        loss = np.array([])
+        val_loss = np.array([])
+        
         for i in range(epochs):
-            if(batch == "full"):
+            O = np.array([])
+
+            if batch_size == "full":
+                #for batch gradient descent, i need to have a way to accumulate the gradient for each pattern with a shape like the weights
                 for layer in self.layers:
                     layer.weights_grad_acc = np.zeros_like(layer.weights)
                     layer.bias_grad_acc = np.zeros_like(layer.biases)
+            
+                #iterate on each pattern of and backprop
                 for x,t in zip(X,T):
                     o = self.feed_forward(x)
-                    deltas = self.back_prop(t)
+                    O = np.concatenate((O, o))
+                    self.back_prop(t)
 
+                    #accumulate gradient
                     for layer in self.layers:
                         layer.weights_grad_acc += np.outer(layer.deltas, layer.inputs)
                         layer.bias_grad_acc += layer.deltas
 
-                self.weights_update(batch,len(X))
-        # for x, t in zip(X,T): #TODO introdurre shuffling nel training on line
-        #     # for _ in range(5):
-        #     o = self.feed_forward(x)
-        #     delta = self.back_prop(t)
-        #     self.weights_update()
-        #     print(o)
-        #     o = self.feed_forward(x)
-        #     print(o)
-        #     print(t)
-        #     print('-'*30)
+                self.weights_update(len(X))
+
+            elif isinstance(batch_size, int):
+                if batch_size == 1:
+                    perm = np.random.permutation(len(X))
+                    X = X[perm]
+                    T = T[perm]
+                    for x, t in zip(X,T):
+                        o = self.feed_forward(x)
+                        O = np.concatenate((O, o))
+                        self.back_prop(t)
+                        self.weights_update(1)
+                else:
+                    for layer in self.layers: 
+                        layer.weights_grad_acc = np.zeros_like(layer.weights)
+                        layer.bias_grad_acc = np.zeros_like(layer.biases)
+
+                    counter = 0
+                    for x,t in zip(X,T):
+                        o = self.feed_forward(x)
+                        O = np.concatenate((O, o))
+                        self.back_prop(t)
+
+                        #using a counter manages the istances if dataset ends before batch size is reached
+                        counter += 1
+
+                        for layer in self.layers:
+                            layer.weights_grad_acc += np.outer(layer.deltas, layer.inputs)
+                            layer.bias_grad_acc += layer.deltas
+
+                        if counter == batch_size:
+                            self.weights_update(counter)
+                            for layer in self.layers: 
+                                layer.weights_grad_acc = np.zeros_like(layer.weights)
+                                layer.bias_grad_acc = np.zeros_like(layer.biases)
+                            counter = 0
+
+                    #flush update if necessary
+                    if counter != 0:
+                        self.weights_update(counter)                
+
+            else:
+                raise TypeError('batch_size is not int or "full".')
+
+            loss = np.append(loss, loss_func(O,T))
+            # val_loss = np.append(val_loss, loss_func(o,t))
+        return loss
+    
+    # def validate()
+
+    def test(self, X, T):
+        correct_predict = 0
+        for x,t in zip(X,T):
+            o = self.feed_forward(x)
+            print(f"Output {o}")
+            print(f"Target {t}")
+            if o >= 0.5 and t == 1 or o < 0.5 and t == 0:
+                correct_predict += 1
+        accuracy = correct_predict/len(T)
+        print(f"The model obtained an accuracy of {accuracy:.2%} on test set")
+                
+
+

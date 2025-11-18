@@ -2,23 +2,26 @@ from utils import create_random_extractor, load_config_json
 from model import NeuralNetwork
 from data_loader import data_loader
 
+import matplotlib.pyplot as plt
+
 import random
+import time
 
 if __name__ == "__main__":
 
     
+    start = time.time()
 
     config = load_config_json("config.json")
     random.seed(config["general"]["seed"])
 
-    batch_size = config["training"]["batch_size"]
-    epochs = config["training"]["epochs"]
+    train_args = config["training"]
 
     # MONK DATASET
     monk_train_data = config["paths"]["MONK_train_data"]
     monk_test_data = config["paths"]["MONK_test_data"]
-    X_train, t_train, input_units = data_loader(monk_train_data, shuffle=True)
-    X_test, t_test, _ = data_loader(monk_train_data, batch_size=batch_size, shuffle=False)
+    X_train, t_train, input_units = data_loader(monk_train_data, shuffle=True)              #TODO aggiungere vl splittando ulteriormente x e t train
+    X_test, t_test, _ = data_loader(monk_test_data, shuffle=False)
 
 
     # # EXAM DATASET
@@ -27,9 +30,12 @@ if __name__ == "__main__":
 
     hidden_act_func = config["functions"]["hidden"]
     output_act_func = config["functions"]["output"]
-    act_func = [hidden_act_func, output_act_func]
+    act_func = [hidden_act_func, output_act_func]                   #TODO mandare al modello nei training hyperpar o in un altro modo
     
-    training_hyperpar = [config["training"]["learning_rate"], config["training"]["momentum"], config["training"]["batch_size"]]
+    training_hyperpar = config["training"]
+    early_stopping = config["training"]["early_stopping"]
+
+    loss_func = config["functions"]["loss"]
 
     extractor = create_random_extractor(config["initialization"]["method"])
 
@@ -37,10 +43,25 @@ if __name__ == "__main__":
                        num_outputs=config["architecture"]["output_units"],
                        neurons_per_layer=config["architecture"]["neurons_per_layer"],
                        training_hyperpar=training_hyperpar,
-                       extractor=extractor)
+                       extractor=extractor,
+                       activation=act_func,
+                       early_stopping=early_stopping)
     
     # print(nn.feed_forward(one_hot_encoding_train.iloc[0].to_numpy()))
-    nn.train(X_train, t_train,epochs,batch_size)
+    loss = nn.train(X_train, t_train, train_args, loss_func)
+
+    #TODO nn validate da fare
+
+    nn.test(X_test,t_test)
+
+    end = time.time() - start
+    print(end)
+
+    plt.plot(loss)
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.show()
+    
 
     #print(nn)
     #nn.plot()                                   # (da eliminare prima di mandare a Micheli)
