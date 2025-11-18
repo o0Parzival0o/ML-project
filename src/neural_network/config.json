@@ -11,12 +11,14 @@
       "epochs": 3,
       "learning_rate": 0.05,
       "momentum": 0.85,
-      "batch_size": "full",
+      "batch_type": "full",
+      "batch_size": "16",
       "early_stopping": {
           "enabled": true,
           "patience": 10,
           "monitor": "val_loss"
-      }
+      },
+      "vl": 0.2
   },
   "initialization": {
       "method": "standard"

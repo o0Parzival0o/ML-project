@@ -2,6 +2,7 @@ from utils import plot_network # (da eliminare prima di mandare a Micheli)
 import activations as actfun
 import numpy as np
 
+np.random.seed(42)
 
 class Neuron:
     """ Represents a single neuron in the neural network. """
@@ -68,9 +69,11 @@ class NeuralNetwork:
         self.layers = self.hidden_layers + [self.output_layer]
         
 
-        self.learning_rate = training_hyperpar[0]
-        self.momentum = training_hyperpar[1]
-        self.batch_size = training_hyperpar[2]
+        self.learning_rate = training_hyperpar["learning_rate"]
+        self.momentum = training_hyperpar["momentum"]
+        # self.batch_size = training_hyperpar[2] TODO rimuovere se non serve (o nel caso leggere il valore corretto)
+
+        self.vl=training_hyperpar["vl"]
 
     def init_weights(self, layer, num_prev_inputs):
         for neuron in layer.neurons:
@@ -129,39 +132,81 @@ class NeuralNetwork:
 
 
     def weights_update(self,batch,l):
-        if(batch == "full"):
+        if(batch == "full" or batch == "minibatch"):
             for layer in self.layers:
                 layer.weights = (layer.weights + self.learning_rate * (layer.weights_grad_acc/l)) 
                 layer.biases = (layer.biases + self.learning_rate * (layer.bias_grad_acc/l)) 
+        else:
 
-        # for layer in self.layers:
-        #     layer.weights = layer.weights + self.learning_rate * np.outer(layer.deltas, layer.inputs)
-        #     layer.biases = layer.biases + self.learning_rate * layer.deltas 
+            for layer in self.layers:
+                layer.weights = layer.weights + self.learning_rate * np.outer(layer.deltas, layer.inputs)
+                layer.biases = layer.biases + self.learning_rate * layer.deltas 
 
     #TODO usare early stopping o comunque altri parametri per capire dopo quante epoche fermarsi
 
-    def train(self, X, T,epochs,batch):
+    def train(self, X, T,train_args):
+        batch = train_args["batch_type"]
+        batch_size = train_args["batch_size"]
+        epochs = train_args["epochs"]
         for i in range(epochs):
             if(batch == "full"):
-                for layer in self.layers:
+                #for batch gradient descent, i need to have a way to accumulate the gradient for each pattern with a shape like the weights
+                for layer in self.layers: 
                     layer.weights_grad_acc = np.zeros_like(layer.weights)
                     layer.bias_grad_acc = np.zeros_like(layer.biases)
+
+                #iterate on eac pattern ff and backprop
                 for x,t in zip(X,T):
                     o = self.feed_forward(x)
                     deltas = self.back_prop(t)
-
+                    
+                    #accumulate gradient
                     for layer in self.layers:
                         layer.weights_grad_acc += np.outer(layer.deltas, layer.inputs)
                         layer.bias_grad_acc += layer.deltas
 
                 self.weights_update(batch,len(X))
-        # for x, t in zip(X,T): #TODO introdurre shuffling nel training on line
-        #     # for _ in range(5):
-        #     o = self.feed_forward(x)
-        #     delta = self.back_prop(t)
-        #     self.weights_update()
-        #     print(o)
-        #     o = self.feed_forward(x)
-        #     print(o)
-        #     print(t)
-        #     print('-'*30)
+
+            if(batch == 'minibatch'):
+                for layer in self.layers: 
+                    layer.weights_grad_acc = np.zeros_like(layer.weights)
+                    layer.bias_grad_acc = np.zeros_like(layer.biases)
+
+                counter = 0
+                for x,t in zip(X,T):
+                    self.feed_forward(x)
+                    self.back_prop(t)
+
+                    #using a counter manages the istances if dataset ends before batch size is reached
+                    counter += 1
+
+                    for layer in self.layers:
+                        layer.weights_grad_acc += np.outer(layer.deltas, layer.inputs)
+                        layer.bias_grad_acc += layer.deltas
+                
+                    if(counter == batch_size):    
+                        self.weights_update(batch,counter)
+                        for layer in self.layers: 
+                            layer.weights_grad_acc = np.zeros_like(layer.weights)
+                            layer.bias_grad_acc = np.zeros_like(layer.biases)
+                        counter = 0
+
+                #flush update if necessary
+                if(counter!=0):
+                    self.weights_update(batch,counter)                
+            
+            else:
+                np.random.shuffle(X)
+                np.random.shuffle(T)
+                for x, t in zip(X,T):
+                    # for _ in range(5):
+                    o = self.feed_forward(x)
+                    delta = self.back_prop(t)
+                    self.weights_update(0,0)
+                    # print(o)
+                    o = self.feed_forward(x)
+                    # print(o)
+                    # print(t)
+                    # print('-'*30)
+
+    # def validate()
