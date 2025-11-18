@@ -22,6 +22,8 @@
           "monitor": "val_loss"
       },
       "vl": 0.2
+      },
+      "vl": 0.2
   },
   "initialization": {
       "method": "standard"

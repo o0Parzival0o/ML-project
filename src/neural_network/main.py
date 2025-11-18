@@ -16,6 +16,7 @@ if __name__ == "__main__":
     random.seed(config["general"]["seed"])
 
     train_args = config["training"]
+    train_args = config["training"]
 
     # MONK DATASET
     monk_train_data = config["paths"]["MONK_train_data"]
@@ -65,3 +66,5 @@ if __name__ == "__main__":
 
     #print(nn)
     #nn.plot()                                   # (da eliminare prima di mandare a Micheli)
+
+    #TODO forse ha senso rimuovere dai config il seme (tanto basta far sì che sia riproducibile con seme hardcodato su macchine diverse, non ci interessa cambiare il seme, oppure vedere se ha senso tenerlo e provare con inizializzazioni diverse)

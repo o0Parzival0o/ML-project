@@ -7,6 +7,9 @@ import numpy as np
 np.random.seed(42)
 
 
+
+np.random.seed(42)
+
 class Neuron:
     """ Represents a single neuron in the neural network. """
     def __init__(self):
