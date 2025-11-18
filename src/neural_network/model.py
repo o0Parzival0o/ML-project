@@ -143,8 +143,8 @@ class NeuralNetwork:
                 layer.weights = layer.weights + self.learning_rate * np.outer(layer.deltas, layer.inputs)
                 layer.biases = layer.biases + self.learning_rate * layer.deltas
             else:
-                layer.weights = (layer.weights + self.learning_rate * (layer.weights_grad_acc/l)) 
-                layer.biases = (layer.biases + self.learning_rate * (layer.bias_grad_acc/l))
+                layer.weights = (layer.weights + self.learning_rate * (layer.weights_grad_acc)) 
+                layer.biases = (layer.biases + self.learning_rate * (layer.bias_grad_acc))
 
 
     def train(self, X, T, train_args, loss_func):
@@ -154,11 +154,12 @@ class NeuralNetwork:
         epochs = train_args["epochs"]
 
         loss_func = losses.losses_functions[loss_func]
-        loss = np.array([])
-        val_loss = np.array([])
+        loss = []
+        val_loss = []
         
+        O = np.array([self.feed_forward(x) for x in X])                     # loss 0: with random parameters
+        loss.append(loss_func(O,T))
         for i in range(epochs):                     #TODO usare early stopping o comunque altri parametri per capire dopo quante epoche fermarsi
-            O = np.array([])
 
             if batch_size == "full":
                 #for batch gradient descent, i need to have a way to accumulate the gradient for each pattern with a shape like the weights
@@ -168,8 +169,7 @@ class NeuralNetwork:
             
                 #iterate on each pattern of and backprop
                 for x,t in zip(X,T):
-                    o = self.feed_forward(x)
-                    O = np.concatenate((O, o))
+                    self.feed_forward(x)
                     self.back_prop(t)
 
                     #accumulate gradient
@@ -179,25 +179,15 @@ class NeuralNetwork:
 
                 self.weights_update(len(X))
 
-            elif isinstance(batch_size, int):
-                if batch_size == 1:
-                    perm = np.random.permutation(len(X))
-                    X = X[perm]
-                    T = T[perm]
-                    for x, t in zip(X,T):
-                        o = self.feed_forward(x)
-                        O = np.concatenate((O, o))
-                        self.back_prop(t)
-                        self.weights_update(1)
-                else:
+            elif isinstance(batch_size, int) and batch_size > 0:
+                if batch_size != 1:
                     for layer in self.layers: 
                         layer.weights_grad_acc = np.zeros_like(layer.weights)
                         layer.bias_grad_acc = np.zeros_like(layer.biases)
 
                     counter = 0
                     for x,t in zip(X,T):
-                        o = self.feed_forward(x)
-                        O = np.concatenate((O, o))
+                        self.feed_forward(x)
                         self.back_prop(t)
 
                         #using a counter manages the istances if dataset ends before batch size is reached
@@ -215,15 +205,27 @@ class NeuralNetwork:
                             counter = 0
 
                     #flush update if necessary
-                    if counter != 0:
-                        self.weights_update(counter)                
+                    if counter != 0 and not batch_droplast:
+                        self.weights_update(counter)
+
+                elif batch_size == 1:
+                    perm = np.random.permutation(len(X))
+                    X = X[perm]
+                    T = T[perm]
+                    for x,t in zip(X,T):
+                        self.feed_forward(x)
+                        self.back_prop(t)
+                        self.weights_update(1)
+
 
             else:
-                raise TypeError('batch_size is not int or "full".')
+                raise TypeError('batch_size is not positive int or "full".')
 
-            loss = np.append(loss, loss_func(O,T))
+            
+            O = np.array([self.feed_forward(x) for x in X])
+            loss.append(loss_func(O,T))
             # val_loss = np.append(val_loss, loss_func(o,t))
-        return loss
+        return np.array(loss)
     
     # def validate()
 
@@ -231,8 +233,8 @@ class NeuralNetwork:
         correct_predict = 0
         for x,t in zip(X,T):
             o = self.feed_forward(x)
-            print(f"Output {o}")
-            print(f"Target {t}")
+            # print(f"Output {o}")
+            # print(f"Target {t}")
             if o >= 0.5 and t == 1 or o < 0.5 and t == 0:
                 correct_predict += 1
         accuracy = correct_predict/len(T)

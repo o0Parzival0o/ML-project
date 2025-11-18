@@ -51,6 +51,8 @@ def data_loader(file_path, shuffle=False):
 
     X = X.to_numpy()
     t = t.to_numpy()
+    if t.ndim == 1:                         # if dim == 1, we have a 1D vector (num_patt,) but we want 2D vector (num_patt, 1)
+        t = t.reshape(-1, 1)
     idx = np.arange((len(X)))
 
     if shuffle:

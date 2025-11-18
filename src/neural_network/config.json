@@ -4,13 +4,13 @@
       "neurons_per_layer": [3,2]
   },
   "functions": {
-      "hidden": "tanh",
-      "output": "tanh",
+      "hidden": "relu",
+      "output": "sigmoid",
       "loss": "MSE"
   },
   "training": {
-      "epochs": 100,
-      "learning_rate": 0.6,
+      "epochs": 200,
+      "learning_rate": 0.01,
       "momentum": 0.85,
       "batch": {
           "batch_size": "full",
@@ -21,7 +21,8 @@
           "patience": 10,
           "monitor": "val_loss"
       },
-      "vl": 0.2
+      "vl": 0.25,
+      "ts":0.25
   },
   "initialization": {
       "method": "standard"
@@ -29,8 +30,8 @@
   "paths": {
       "MONK_train_data": "../../MONK files/monks-1.train",
       "MONK_test_data": "../../MONK files/monks-1.test",
-      "CUP_train_data": "ML-25-PRJ lecture amp package-20251112/ML-CUP25-TR.csv",
-      "CUP_test_data": "ML-25-PRJ lecture amp package-20251112/ML-CUP25-TS.csv"
+      "CUP_train_data": "../../ML-25-PRJ lecture amp package-20251112/ML-CUP25-TR.csv",
+      "CUP_test_data": "../../ML-25-PRJ lecture amp package-20251112/ML-CUP25-TS.csv"
   },
   "general": {
       "seed": 42

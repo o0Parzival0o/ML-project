@@ -16,7 +16,6 @@ if __name__ == "__main__":
     random.seed(config["general"]["seed"])
 
     train_args = config["training"]
-    train_args = config["training"]
 
     # MONK DATASET
     monk_train_data = config["paths"]["MONK_train_data"]

@@ -3,12 +3,12 @@ import numpy as np
 def MSE(o, t):
     t = t.astype(float)
     diff = o - t
-    return np.mean(np.sum(diff**2, axis=0))
+    return np.mean(np.sum(diff**2, axis=1))
 
 def MEE(o, t):
     t = t.astype(float)
     diff = o - t
-    return np.mean(np.sqrt(np.sum(diff**2, axis=0)))
+    return np.mean(np.sqrt(np.sum(diff**2, axis=1)))
 
 
 losses_functions ={
