@@ -29,7 +29,7 @@ class NeuronLayer:
 
 class NeuralNetwork:
     """ Represents a multi-layer perceptron neural network. """
-    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar, extractor, activation=["relu", "sigmoid"]):
+    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar, extractor, activation=["tanh", "sigmoid"]):
         self.extractor = extractor
         self.hidden_activation = actfun.activation_functions[activation[0]][0]
         self.d_hidden_activation = actfun.activation_functions[activation[0]][1]
@@ -137,7 +137,6 @@ class NeuralNetwork:
                 layer.weights = (layer.weights + self.learning_rate * (layer.weights_grad_acc/l)) 
                 layer.biases = (layer.biases + self.learning_rate * (layer.bias_grad_acc/l)) 
         else:
-
             for layer in self.layers:
                 layer.weights = layer.weights + self.learning_rate * np.outer(layer.deltas, layer.inputs)
                 layer.biases = layer.biases + self.learning_rate * layer.deltas 
@@ -196,8 +195,9 @@ class NeuralNetwork:
                     self.weights_update(batch,counter)                
             
             else:
-                np.random.shuffle(X)
-                np.random.shuffle(T)
+                perm = np.random.permutation(len(X))
+                X = X[perm]
+                T = T[perm]
                 for x, t in zip(X,T):
                     # for _ in range(5):
                     o = self.feed_forward(x)
@@ -210,3 +210,15 @@ class NeuralNetwork:
                     # print('-'*30)
 
     # def validate()
+
+    def test(self,X,T):
+        correct_predict = 0
+        for x,t in zip(X,T):
+            o = self.feed_forward(x)
+            print(f"output {o}")
+            print(f"target {t}")
+            if(o >= 0.5 and t == 1 or o <0.5 and t == 0):
+                correct_predict += 1
+        accuracy = correct_predict/len(T)
+        print(f"the model obtained an accuracy of {accuracy} on test set")
+

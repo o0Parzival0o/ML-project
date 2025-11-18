@@ -16,8 +16,8 @@ if __name__ == "__main__":
     # MONK DATASET
     monk_train_data = config["paths"]["MONK_train_data"]
     monk_test_data = config["paths"]["MONK_test_data"]
-    X_train, t_train, input_units = data_loader(monk_train_data, shuffle=True)
-    X_test, t_test, _ = data_loader(monk_train_data, shuffle=False)
+    X_train, t_train, input_units = data_loader(monk_train_data, shuffle=False)#TODO aggiungere vl splittando ulteriormente x e t train
+    X_test, t_test, _ = data_loader(monk_test_data, shuffle=False)
 
 
     # # EXAM DATASET
@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     hidden_act_func = config["functions"]["hidden"]
     output_act_func = config["functions"]["output"]
-    act_func = [hidden_act_func, output_act_func]
+    act_func = [hidden_act_func, output_act_func]#TODO mandare al modello nei training hyperpar o in un altro modo
     
     training_hyperpar = config["training"]
 
@@ -40,6 +40,10 @@ if __name__ == "__main__":
     
     # print(nn.feed_forward(one_hot_encoding_train.iloc[0].to_numpy()))
     nn.train(X_train, t_train,train_args)#TODO unire train args e training hyperpar
+
+    #TODO nn validate da fare
+
+    nn.test(X_test,t_test)
 
     #print(nn)
     #nn.plot()                                   # (da eliminare prima di mandare a Micheli)
