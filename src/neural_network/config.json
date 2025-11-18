@@ -13,15 +13,13 @@
       "learning_rate": 0.05,
       "momentum": 0.85,
       "batch": {
-          "batch_size": "full",
+          "batch_size": 1,
           "drop_last": true
       },
       "early_stopping": {
           "enabled": true,
           "patience": 10,
           "monitor": "val_loss"
-      },
-      "vl": 0.2
       },
       "vl": 0.2
   },
