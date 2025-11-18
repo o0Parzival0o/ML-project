@@ -139,10 +139,13 @@ class NeuralNetwork:
 
     def weights_update(self, l):
         for layer in self.layers:
-            layer.weights = (layer.weights + self.learning_rate * (layer.weights_grad_acc/l)) 
-            layer.biases = (layer.biases + self.learning_rate * (layer.bias_grad_acc/l))
+            if l == 1:
+                layer.weights = layer.weights + self.learning_rate * np.outer(layer.deltas, layer.inputs)
+                layer.biases = layer.biases + self.learning_rate * layer.deltas
+            else:
+                layer.weights = (layer.weights + self.learning_rate * (layer.weights_grad_acc/l)) 
+                layer.biases = (layer.biases + self.learning_rate * (layer.bias_grad_acc/l))
 
-    #TODO usare early stopping o comunque altri parametri per capire dopo quante epoche fermarsi
 
     def train(self, X, T, train_args, loss_func):
 
@@ -154,7 +157,7 @@ class NeuralNetwork:
         loss = np.array([])
         val_loss = np.array([])
         
-        for i in range(epochs):
+        for i in range(epochs):                     #TODO usare early stopping o comunque altri parametri per capire dopo quante epoche fermarsi
             O = np.array([])
 
             if batch_size == "full":

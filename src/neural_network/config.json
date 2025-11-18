@@ -1,7 +1,7 @@
 {
   "architecture": {
       "output_units": 1,
-      "neurons_per_layer": [3,2,3]
+      "neurons_per_layer": [3,2]
   },
   "functions": {
       "hidden": "tanh",
@@ -9,11 +9,11 @@
       "loss": "MSE"
   },
   "training": {
-      "epochs": 50,
-      "learning_rate": 0.05,
+      "epochs": 100,
+      "learning_rate": 0.6,
       "momentum": 0.85,
       "batch": {
-          "batch_size": 1,
+          "batch_size": "full",
           "drop_last": true
       },
       "early_stopping": {
