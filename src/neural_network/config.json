@@ -1,7 +1,7 @@
 {
   "architecture": {
       "output_units": 1,
-      "neurons_per_layer": [3,2]
+      "neurons_per_layer": [3,3]
   },
   "functions": {
       "hidden": "relu",
@@ -9,8 +9,8 @@
       "loss": "MSE"
   },
   "training": {
-      "epochs": 200,
-      "learning_rate": 0.01,
+      "epochs": 1000,
+      "learning_rate": 0.02,
       "momentum": 0.85,
       "batch": {
           "batch_size": "full",
@@ -21,8 +21,11 @@
           "patience": 10,
           "monitor": "val_loss"
       },
-      "vl": 0.25,
-      "ts":0.25
+      "splitting": {
+          "tr": 0.50,
+          "vl": 0.25,
+          "ts":0.25
+      }
   },
   "initialization": {
       "method": "standard"

@@ -3,6 +3,7 @@ import activations as actfun
 import losses
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 np.random.seed(42)
 
@@ -75,11 +76,16 @@ class NeuralNetwork:
         self.momentum = training_hyperpar["momentum"]
         # self.batch_size = training_hyperpar[2] TODO rimuovere se non serve (o nel caso leggere il valore corretto)
 
-        self.vl=training_hyperpar["vl"]
-
         self.early_stopping = early_stopping["enabled"]
         self.early_stopping_patience = early_stopping["patience"]
         self.early_stopping_monitor = early_stopping["monitor"]
+
+        self.tr_loss = None
+        self.tr_accuracy = None
+        self.vl_loss = None
+        self.vl_accuracy = None
+        self.ts_loss = None
+        self.ts_accuracy = None
 
     def init_weights(self, layer, num_prev_inputs):
         for neuron in layer.neurons:
@@ -147,18 +153,18 @@ class NeuralNetwork:
                 layer.biases = (layer.biases + self.learning_rate * (layer.bias_grad_acc))
 
 
-    def train(self, X, T, train_args, loss_func):
+    def train(self, X_tr, T_tr, X_vl=None, T_vl=None, train_args=None, loss_func=None):
 
         batch_size = train_args["batch"]["batch_size"]
         batch_droplast = train_args["batch"]["drop_last"]
         epochs = train_args["epochs"]
 
         loss_func = losses.losses_functions[loss_func]
-        loss = []
-        val_loss = []
+        tr_loss = []
+        tr_accuracy = []
         
-        O = np.array([self.feed_forward(x) for x in X])                     # loss 0: with random parameters
-        loss.append(loss_func(O,T))
+        O_tr = np.array([self.feed_forward(x) for x in X_tr])                     # loss 0: with random parameters
+        tr_loss.append(loss_func(O_tr,T_tr))
         for i in range(epochs):                     #TODO usare early stopping o comunque altri parametri per capire dopo quante epoche fermarsi
 
             if batch_size == "full":
@@ -168,7 +174,7 @@ class NeuralNetwork:
                     layer.bias_grad_acc = np.zeros_like(layer.biases)
             
                 #iterate on each pattern of and backprop
-                for x,t in zip(X,T):
+                for x,t in zip(X_tr,T_tr):
                     self.feed_forward(x)
                     self.back_prop(t)
 
@@ -177,7 +183,7 @@ class NeuralNetwork:
                         layer.weights_grad_acc += np.outer(layer.deltas, layer.inputs)
                         layer.bias_grad_acc += layer.deltas
 
-                self.weights_update(len(X))
+                self.weights_update(len(X_tr))
 
             elif isinstance(batch_size, int) and batch_size > 0:
                 if batch_size != 1:
@@ -186,7 +192,7 @@ class NeuralNetwork:
                         layer.bias_grad_acc = np.zeros_like(layer.biases)
 
                     counter = 0
-                    for x,t in zip(X,T):
+                    for x,t in zip(X_tr,T_tr):
                         self.feed_forward(x)
                         self.back_prop(t)
 
@@ -209,10 +215,10 @@ class NeuralNetwork:
                         self.weights_update(counter)
 
                 elif batch_size == 1:
-                    perm = np.random.permutation(len(X))
-                    X = X[perm]
-                    T = T[perm]
-                    for x,t in zip(X,T):
+                    perm = np.random.permutation(len(X_tr))
+                    X_tr = X_tr[perm]
+                    T_tr = T_tr[perm]
+                    for x,t in zip(X_tr,T_tr):
                         self.feed_forward(x)
                         self.back_prop(t)
                         self.weights_update(1)
@@ -222,10 +228,10 @@ class NeuralNetwork:
                 raise TypeError('batch_size is not positive int or "full".')
 
             
-            O = np.array([self.feed_forward(x) for x in X])
-            loss.append(loss_func(O,T))
-            # val_loss = np.append(val_loss, loss_func(o,t))
-        return np.array(loss)
+            O_tr = np.array([self.feed_forward(x) for x in X_tr])
+            tr_loss.append(loss_func(O_tr,T_tr))
+
+            self.tr_loss = tr_loss
     
     # def validate()
 
@@ -239,6 +245,28 @@ class NeuralNetwork:
                 correct_predict += 1
         accuracy = correct_predict/len(T)
         print(f"The model obtained an accuracy of {accuracy:.2%} on test set")
-                
+    
+    def plot_metrics(self):
+        if self.tr_loss != None:
+            plt.figure(figsize=(10,5))
+            plt.plot(self.tr_loss, c='r', linestyle='-', label='Training')
+            if self.ts_loss:
+                plt.plot(self.ts_loss, c='b', linestyle='--', label='Test')
+            plt.xlabel("Epochs")
+            plt.ylabel("Loss / Test loss" if self.ts_loss else "Loss")
+            plt.legend()
+            plt.grid()
+
+        if self.tr_accuracy != None:
+            plt.figure(figsize=(10,5))
+            plt.plot(self.tr_accuracy, c='r', linestyle='-', label='Training')
+            if self.ts_accuracy:
+                plt.plot(self.ts_accuracy, c='b', linestyle='--', label='Test')
+            plt.xlabel("Epochs")
+            plt.ylabel("Accuracy / Test accuracy" if self.ts_accuracy else "Accuracy")
+            plt.legend()
+            plt.grid()
+
+        plt.show()
 
 

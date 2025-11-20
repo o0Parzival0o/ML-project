@@ -1,4 +1,4 @@
-from utils import create_random_extractor, load_config_json
+import utils
 from model import NeuralNetwork
 from data_loader import data_loader
 
@@ -12,7 +12,7 @@ if __name__ == "__main__":
     
     start = time.time()
 
-    config = load_config_json("config.json")
+    config = utils.load_config_json("config.json")
     random.seed(config["general"]["seed"])
 
     train_args = config["training"]
@@ -20,13 +20,14 @@ if __name__ == "__main__":
     # MONK DATASET
     monk_train_data = config["paths"]["MONK_train_data"]
     monk_test_data = config["paths"]["MONK_test_data"]
-    X_train, t_train, input_units = data_loader(monk_train_data, shuffle=True)              #TODO aggiungere vl splittando ulteriormente x e t train
-    X_test, t_test, _ = data_loader(monk_test_data, shuffle=False)
+    X_train, T_train, input_units = data_loader(monk_train_data, shuffle=True)              #TODO aggiungere vl splittando ulteriormente x e t train
+    X_test, T_test, _ = data_loader(monk_test_data, shuffle=False)
 
 
     # # EXAM DATASET
     # CUP_train_data = config["paths"]["CUP_train_data"]
     # X_train, t_train, input_units = data_loader(CUP_train_data, shuffle=False)
+    # X_CUP, t_CUP, input_units = data_loader(CUP_test_data, shuffle=False)
 
     hidden_act_func = config["functions"]["hidden"]
     output_act_func = config["functions"]["output"]
@@ -37,7 +38,10 @@ if __name__ == "__main__":
 
     loss_func = config["functions"]["loss"]
 
-    extractor = create_random_extractor(config["initialization"]["method"])
+    extractor = utils.create_random_extractor(config["initialization"]["method"])
+
+    data_split_prop = [training_hyperpar["splitting"]["tr"], training_hyperpar["splitting"]["vl"], training_hyperpar["splitting"]["ts"]]
+    X_train, X_val, _, T_train, T_val, _ = utils.data_splitting(X_train, T_train, data_split_prop)
 
     nn = NeuralNetwork(num_inputs=input_units,
                        num_outputs=config["architecture"]["output_units"],
@@ -48,19 +52,16 @@ if __name__ == "__main__":
                        early_stopping=early_stopping)
     
     # print(nn.feed_forward(one_hot_encoding_train.iloc[0].to_numpy()))
-    loss = nn.train(X_train, t_train, train_args, loss_func)
+    nn.train(X_train, T_train, train_args=train_args, loss_func=loss_func)
 
     #TODO nn validate da fare
 
-    nn.test(X_test,t_test)
+    nn.test(X_test, T_test)
 
     end = time.time() - start
     print(end)
 
-    plt.plot(loss)
-    plt.xlabel("Epochs")
-    plt.ylabel("Loss")
-    plt.show()
+    nn.plot_metrics()
     
 
     #print(nn)

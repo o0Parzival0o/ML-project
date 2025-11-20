@@ -17,6 +17,30 @@ def create_random_extractor(method):
         return extractor_function
     else:
         raise ValueError("Invalid method.")
+    
+def data_splitting(X, T, proportions=[1,0,0]):
+    if any(prop < 0 for prop in proportions):
+        raise ValueError("Le proporzioni devono essere >= 0")
+    
+    if sum(proportions) == 1:
+        n = len(X)
+        X_splits = []
+        T_splits = []
+
+        start = 0
+        for p in proportions:
+            end = start + int(p * n)
+
+            X_splits.append(X[start:end])
+            T_splits.append(T[start:end])
+            
+            start = end
+
+        # Ritorno direttamente tutti i vettori come variabili separate
+        return (*X_splits, *T_splits)
+    
+    else:
+        raise ValueError("Sum over proportions list is not 1")
 
 
 #=============================
