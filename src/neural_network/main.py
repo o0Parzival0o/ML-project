@@ -1,11 +1,14 @@
 import utils
 from model import NeuralNetwork
 from data_loader import data_loader
+from validation import grid_search
 
 import matplotlib.pyplot as plt
 
 import random
 import time
+
+
 
 if __name__ == "__main__":
 
@@ -52,9 +55,11 @@ if __name__ == "__main__":
                        early_stopping=early_stopping)
     
     # print(nn.feed_forward(one_hot_encoding_train.iloc[0].to_numpy()))
-    nn.train(X_train, T_train, train_args=train_args, loss_func=loss_func)
+    # nn.train(X_train, T_train, train_args=train_args, loss_func=loss_func)
 
     #TODO nn validate da fare
+    #TODO uniformare impostazione seed randomico da json nei vari file py, non so se sia per come funziona rand ma per ora l'inizializzazione mi sembra essere diversa tra run diverse
+    grid_search()
 
     nn.test(X_test, T_test)
 

@@ -1,0 +1,45 @@
+{
+  "architecture": {
+      "output_units": 1,
+      "neurons_per_layer": [[3,3]]
+  },
+  "functions": {
+      "hidden": ["relu"],
+      "output": ["sigmoid"],
+      "loss": ["MSE"]
+  },
+  "training": {
+      "epochs": [100,200,300],
+      "learning_rate": [0.02,0.05],
+      "momentum": [0.85],
+      "batch": {
+          "batch_size": ["full"],
+          "drop_last": [true]
+      },
+      "early_stopping": {
+          "enabled": [true],
+          "patience": [10],
+          "monitor": ["val_loss"]
+      },
+      "splitting": {
+          "tr": 0.50,
+          "vl": 0.25,
+          "ts":0.25
+      }
+  },
+    "validation": {
+        "method": "hold_out"
+  },
+  "initialization": {
+      "method": ["standard"]
+  },
+  "paths": {
+      "MONK_train_data": "../../MONK files/monks-1.train",
+      "MONK_test_data": "../../MONK files/monks-1.test",
+      "CUP_train_data": "../../ML-25-PRJ lecture amp package-20251112/ML-CUP25-TR.csv",
+      "CUP_test_data": "../../ML-25-PRJ lecture amp package-20251112/ML-CUP25-TS.csv"
+  },
+  "general": {
+      "seed": [42]
+  }
+}

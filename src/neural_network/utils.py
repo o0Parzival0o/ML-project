@@ -42,6 +42,32 @@ def data_splitting(X, T, proportions=[1,0,0]):
     else:
         raise ValueError("Sum over proportions list is not 1")
 
+def flatten_config(d, parent_key='', sep='.'):
+
+    items = []
+    for k, v in d.items():
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k
+        
+        if isinstance(v, dict):
+            print(f"{v}\n")
+            items.extend(flatten_config(v, new_key, sep=sep).items())
+        elif isinstance(v, list):
+
+            items.append((new_key, v))
+        else:
+
+            items.append((new_key, [v]))
+            
+    return dict(items)
+
+def set_dict(d,k,v,sep="."):
+    keys = k.split(sep)
+    for key in keys[:-1]:
+        d = d.setdefault(key, {})
+    d[keys[-1]] = v
+
+
+
 
 #=============================
 # PLOT (da eliminare prima di mandare a Micheli)
