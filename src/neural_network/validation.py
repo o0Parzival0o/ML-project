@@ -2,13 +2,14 @@ import utils
 import activations as actfun
 import losses
 import itertools
+from model import NeuralNetwork
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 np.random.seed(42)
 
-def grid_search():
+def grid_search(train,val,T_train,input_units):
     config = utils.load_config_json("vl_config.json")
     
     # output_units = config["architecture"]
@@ -16,24 +17,51 @@ def grid_search():
 
 
     flattened_values = utils.flatten_config(config)
+
     
     keys, values = zip(*flattened_values.items())
 
-    print(keys,values)
+    # print(keys,values)
 
     trials = []
 
     for comb in itertools.product(*values):
-        # print(comb)
-
         new_config = {}
+
         score = 0
         for k,v in zip(keys,comb):
             utils.set_dict(new_config,k,v)
         trials.append(new_config)
-        # score = launch_trial(comb)
-    for i,trial in zip(enumerate(range(len(trials))),trials):
-        print(f"run numero {i} con dati {trial}\n\n")
 
-# def launch_trial(comb):
+        
+    for i,trial in zip(enumerate(range(len(trials))),trials):
+
+        score = launch_trial(trial,train,val,T_train,input_units)
+
+def launch_trial(comb,train,val,T_train,input_units):
+    
+    output_units = comb["architecture"]["output_units"]
+    neurons_per_layer = comb["architecture"]["neurons_per_layer"]
+    hidden_act_func = comb["functions"]["hidden"]
+    output_act_func = comb["functions"]["output"]
+    act_func = [hidden_act_func, output_act_func]   
+
+    train_args = comb["training"]
+    training_hyperpar = comb["training"]
+
+    early_stopping = comb["training"]["early_stopping"]
+
+    loss_func = comb["functions"]["loss"]
+
+    extractor = utils.create_random_extractor(comb["initialization"]["method"])
+
+    nn = NeuralNetwork(num_inputs=input_units,
+                       num_outputs=comb["architecture"]["output_units"],
+                       neurons_per_layer=comb["architecture"]["neurons_per_layer"],
+                       training_hyperpar=training_hyperpar,
+                       extractor=extractor,
+                       activation=act_func,
+                       early_stopping=early_stopping)
+    
+    nn.train(train, T_train, train_args=train_args, loss_func=loss_func)
 

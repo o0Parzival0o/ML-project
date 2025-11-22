@@ -23,7 +23,7 @@ if __name__ == "__main__":
     # MONK DATASET
     monk_train_data = config["paths"]["MONK_train_data"]
     monk_test_data = config["paths"]["MONK_test_data"]
-    X_train, T_train, input_units = data_loader(monk_train_data, shuffle=True)              #TODO aggiungere vl splittando ulteriormente x e t train
+    X_train, T_train, input_units = data_loader(monk_train_data, shuffle=True)       
     X_test, T_test, _ = data_loader(monk_test_data, shuffle=False)
 
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
     #TODO nn validate da fare
     #TODO uniformare impostazione seed randomico da json nei vari file py, non so se sia per come funziona rand ma per ora l'inizializzazione mi sembra essere diversa tra run diverse
-    grid_search()
+    grid_search(X_train,X_val,T_train,input_units)
 
     nn.test(X_test, T_test)
 
