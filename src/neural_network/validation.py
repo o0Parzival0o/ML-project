@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 np.random.seed(42)
 
-def grid_search(train,val,T_train,input_units):
+def grid_search(training_sets,input_units):
     config = utils.load_config_json("vl_config.json")
     
     # output_units = config["architecture"]
@@ -36,10 +36,13 @@ def grid_search(train,val,T_train,input_units):
         
     for i,trial in zip(enumerate(range(len(trials))),trials):
 
-        score = launch_trial(trial,train,val,T_train,input_units)
+        score = launch_trial(trial,training_sets,input_units)
 
-def launch_trial(comb,train,val,T_train,input_units):
-    
+def launch_trial(comb,training_sets,input_units):
+    print(f"Lancio run con parametri {comb}\n\n\n")
+
+    X_train,X_val,T_train,T_val = training_sets
+
     output_units = comb["architecture"]["output_units"]
     neurons_per_layer = comb["architecture"]["neurons_per_layer"]
     hidden_act_func = comb["functions"]["hidden"]
@@ -63,5 +66,11 @@ def launch_trial(comb,train,val,T_train,input_units):
                        activation=act_func,
                        early_stopping=early_stopping)
     
-    nn.train(train, T_train, train_args=train_args, loss_func=loss_func)
+    nn.train(X_train, T_train, train_args=train_args, loss_func=loss_func)
 
+    score = nn.test(X_val, T_val)
+
+
+def perform_search(training_sets,input_units,search_type):
+    if(search_type == "grid"):
+        grid_search(training_sets,input_units)
