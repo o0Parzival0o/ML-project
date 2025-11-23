@@ -244,7 +244,7 @@ class NeuralNetwork:
                 raise TypeError('batch_size is not positive int or "full".')
 
             #check if vl increases
-            if(early_stopping):
+            if(early_stopping):#TODO spostarlo in una funzione separata per maggiore leggibilità del codice
                 if(monitor == "val_loss"):
                     loss = self.validation_loss(X_vl,T_vl,vl_loss_func)
                     if(loss < vl_loss):
