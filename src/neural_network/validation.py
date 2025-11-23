@@ -42,6 +42,7 @@ def grid_search(training_sets,input_units):
             vl_loss = loss,i
 
     print(f"The best combination is {trials[vl_loss[1]]}\nwith a vl loss of {vl_loss[0]}")
+    #TODO ricordarsi di rifare training del modello con parametri ottimi dopo la vl
 
 
 def launch_trial(comb,training_sets,input_units):
