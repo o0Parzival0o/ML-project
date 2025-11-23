@@ -9,7 +9,7 @@
       "loss": ["MSE"]
   },
   "training": {
-      "epochs": [100,200,300],
+      "epochs": [140,180,210],
       "learning_rate": [0.02,0.05],
       "momentum": [0.85],
       "batch": {

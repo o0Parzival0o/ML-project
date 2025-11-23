@@ -233,7 +233,14 @@ class NeuralNetwork:
 
             self.tr_loss = tr_loss
     
-    # def validate()
+    def validation_loss(self,X,T,loss_func):
+
+                
+        predictions = np.array([self.feed_forward(x) for x in X])
+        loss = losses.losses_functions[loss_func](predictions,T)
+
+
+        return loss
 
     def test(self, X, T):
         correct_predict = 0

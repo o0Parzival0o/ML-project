@@ -27,6 +27,9 @@
           "ts":0.25
       }
   },
+  "validation": {
+    "method": "hold_out"
+  },
   "initialization": {
       "method": "standard"
   },
