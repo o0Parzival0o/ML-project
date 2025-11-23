@@ -73,7 +73,7 @@ def launch_trial(comb,training_sets,input_units):
                        activation=act_func,
                        early_stopping=early_stopping)
     
-    nn.train(X_train, T_train, train_args=train_args, loss_func=loss_func)
+    nn.train(X_train, T_train,X_val,T_val, train_args=train_args, loss_func=loss_func,early_stopping=early_stopping)
 
     vl_loss = nn.validation_loss(X_val,T_val,loss_func)
     print(f"\n loss for this run {vl_loss}\n")

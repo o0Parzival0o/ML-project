@@ -4,6 +4,7 @@ import losses
 
 import numpy as np
 import matplotlib.pyplot as plt
+import copy
 
 np.random.seed(42)
 
@@ -153,19 +154,34 @@ class NeuralNetwork:
                 layer.biases = (layer.biases + self.learning_rate * (layer.bias_grad_acc))
 
 
-    def train(self, X_tr, T_tr, X_vl=None, T_vl=None, train_args=None, loss_func=None):
+    def train(self, X_tr, T_tr, X_vl=None, T_vl=None, train_args=None, loss_func=None, early_stopping = None):
 
         batch_size = train_args["batch"]["batch_size"]
         batch_droplast = train_args["batch"]["drop_last"]
         epochs = train_args["epochs"]
 
-        loss_func = losses.losses_functions[loss_func]
+        loss_funct = losses.losses_functions[loss_func]
         tr_loss = []
         tr_accuracy = []
+        prev_nn = []
+        #Early stopping variables
+        vl_loss_func = loss_func
+        early_stopping_cond = early_stopping["enabled"]
+        vl_loss = float("inf")
+        patience_reset = early_stopping["patience"]
+        best_model_weights = copy.deepcopy(self.layers)
+        monitor = early_stopping["monitor"]
+        patience = early_stopping["patience"]
+        print(loss_func)
+        if early_stopping_cond and monitor == "val_loss":
+            vl_loss = self.validation_loss(X_vl, T_vl, vl_loss_func)
+    
         
         O_tr = np.array([self.feed_forward(x) for x in X_tr])                     # loss 0: with random parameters
-        tr_loss.append(loss_func(O_tr,T_tr))
-        for i in range(epochs):                     #TODO usare early stopping o comunque altri parametri per capire dopo quante epoche fermarsi
+        tr_loss.append(loss_funct(O_tr,T_tr))
+
+        for i in range(epochs):      #TODO usare early stopping o comunque altri parametri per capire dopo quante epoche fermarsi
+            
 
             if batch_size == "full":
                 #for batch gradient descent, i need to have a way to accumulate the gradient for each pattern with a shape like the weights
@@ -227,9 +243,30 @@ class NeuralNetwork:
             else:
                 raise TypeError('batch_size is not positive int or "full".')
 
-            
+            #check if vl increases
+            if(early_stopping):
+                if(monitor == "val_loss"):
+                    loss = self.validation_loss(X_vl,T_vl,vl_loss_func)
+                    if(loss < vl_loss):
+                        vl_loss = loss
+                        patience = patience_reset
+                        best_model_weights = copy.deepcopy(self.layers)
+                    else:
+                        patience -= 1
+                        #patience +1 retains 1 epoch of patience if i set it to 1 and it is worse, if set to 0 and worsens it triggers ES
+                        if(patience+1 <= 0):
+                            print(f"Early stopping at epoch {i}")
+
+                            self.layers = copy.deepcopy(best_model_weights)
+
+                            self.hidden_layers = self.layers[:-1]
+                            self.output_layer = self.layers[-1]
+
+                            break
+            # print(f"validation loss in this run {loss}\n\n")
+
             O_tr = np.array([self.feed_forward(x) for x in X_tr])
-            tr_loss.append(loss_func(O_tr,T_tr))
+            tr_loss.append(loss_funct(O_tr,T_tr))
 
             self.tr_loss = tr_loss
     
