@@ -1,9 +1,7 @@
 import utils
 from model import NeuralNetwork
 from data_loader import data_loader
-from validation import perform_search
-
-import matplotlib.pyplot as plt
+from model_selection import perform_search
 
 import random
 import time
@@ -43,32 +41,38 @@ if __name__ == "__main__":
 
     extractor = utils.create_random_extractor(config["initialization"]["method"])
 
-    data_split_prop = [training_hyperpar["splitting"]["tr"], training_hyperpar["splitting"]["vl"], training_hyperpar["splitting"]["ts"]]
-    X_train, X_val, _, T_train, T_val, _ = utils.data_splitting(X_train, T_train, data_split_prop)
+    # data_split_prop = [training_hyperpar["splitting"]["tr"], training_hyperpar["splitting"]["vl"], training_hyperpar["splitting"]["ts"]]
+    # X_train, X_val, _, T_train, T_val, _ = utils.data_splitting(X_train, T_train, data_split_prop)
 
-    training_sets = [X_train,X_val,T_train,T_val]
-    nn = NeuralNetwork(num_inputs=input_units,
-                       num_outputs=config["architecture"]["output_units"],
-                       neurons_per_layer=config["architecture"]["neurons_per_layer"],
-                       training_hyperpar=training_hyperpar,
-                       extractor=extractor,
-                       activation=act_func,
-                       early_stopping=early_stopping)
+    data_split_prop = [0.7, 0.3]
+    X_train, X_val, T_train, T_val = utils.data_splitting(X_train, T_train, data_split_prop)
+
+    training_sets = [X_train, X_val, T_train, T_val]
+    # nn = NeuralNetwork(num_inputs=input_units,
+    #                    num_outputs=config["architecture"]["output_units"],
+    #                    neurons_per_layer=config["architecture"]["neurons_per_layer"],
+    #                    training_hyperpar=training_hyperpar,
+    #                    extractor=extractor,
+    #                    activation=act_func,
+    #                    early_stopping=early_stopping)
     
-    # print(nn.feed_forward(one_hot_encoding_train.iloc[0].to_numpy()))
-    # nn.train(X_train, T_train, train_args=train_args, loss_func=loss_func)
-    search_type = "grid"
+    # nn.train(X_train, T_train, X_val, T_val, train_args=train_args, loss_func=loss_func, early_stopping=early_stopping)
+    # nn.test(X_test, T_test)
+    
+
     #TODO nn validate da fare
     #TODO uniformare impostazione seed randomico da json nei vari file py, non so se sia per come funziona rand ma per ora l'inizializzazione mi sembra essere diversa tra run diverse
-    perform_search(training_sets,input_units,search_type)
+    
+    search_type = "grid"
+    perform_search(training_sets, input_units, search_type)
 
 
-    # nn.test(X_test, T_test)
+    
 
     end = time.time() - start
-    print(end)
+    print(f"Elapsed time: {end} s")
 
-    nn.plot_metrics()
+    # nn.plot_metrics()
     
 
     #print(nn)

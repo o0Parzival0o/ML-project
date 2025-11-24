@@ -158,31 +158,33 @@ class NeuralNetwork:
 
         batch_size = train_args["batch"]["batch_size"]
         batch_droplast = train_args["batch"]["drop_last"]
-        epochs = train_args["epochs"]
+        max_epochs = train_args["epochs"]
 
-        loss_funct = losses.losses_functions[loss_func]
+        #Early stopping variables
+        early_stopping_cond = early_stopping["enabled"]
+        patience = early_stopping["patience"]
+        best_model_weights = copy.deepcopy(self.layers)         #############
+        monitor = early_stopping["monitor"]
+
+        loss_func = losses.losses_functions[loss_func]
         tr_loss = []
         tr_accuracy = []
-        prev_nn = []
-        #Early stopping variables
-        vl_loss_func = loss_func
-        early_stopping_cond = early_stopping["enabled"]
-        vl_loss = float("inf")
-        patience_reset = early_stopping["patience"]
-        best_model_weights = copy.deepcopy(self.layers)
-        monitor = early_stopping["monitor"]
-        patience = early_stopping["patience"]
-        print(loss_func)
+        vl_loss = []
+        vl_accuracy = []
+
+        tr_loss.append(self.loss_calculator(X_tr, T_tr, loss_func))                 # loss 0: with random parameters
+
         if early_stopping_cond and monitor == "val_loss":
-            vl_loss = self.validation_loss(X_vl, T_vl, vl_loss_func)
-    
+            vl_loss.append(self.loss_calculator(X_vl, T_vl, loss_func))
+
+        prev_nn = []    
         
-        O_tr = np.array([self.feed_forward(x) for x in X_tr])                     # loss 0: with random parameters
-        tr_loss.append(loss_funct(O_tr,T_tr))
-
-        for i in range(epochs):      #TODO usare early stopping o comunque altri parametri per capire dopo quante epoche fermarsi
+        # for i in range(epochs):      #TODO usare early stopping o comunque altri parametri per capire dopo quante epoche fermarsi
+        current_epoch = 0
+        patience_index = patience
+        while current_epoch < max_epochs and (patience_index > 0 if early_stopping_cond else True):
+            current_epoch += 1
             
-
             if batch_size == "full":
                 #for batch gradient descent, i need to have a way to accumulate the gradient for each pattern with a shape like the weights
                 for layer in self.layers:
@@ -244,39 +246,37 @@ class NeuralNetwork:
                 raise TypeError('batch_size is not positive int or "full".')
 
             #check if vl increases
-            if(early_stopping):
-                if(monitor == "val_loss"):
-                    loss = self.validation_loss(X_vl,T_vl,vl_loss_func)
-                    if(loss < vl_loss):
-                        vl_loss = loss
-                        patience = patience_reset
-                        best_model_weights = copy.deepcopy(self.layers)
-                    else:
-                        patience -= 1
-                        #patience +1 retains 1 epoch of patience if i set it to 1 and it is worse, if set to 0 and worsens it triggers ES
-                        if(patience+1 <= 0):
-                            print(f"Early stopping at epoch {i}")
+            if monitor == "val_loss":
+                current_vl_loss = self.loss_calculator(X_vl, T_vl, loss_func)
+                vl_loss.append(current_vl_loss)
 
-                            self.layers = copy.deepcopy(best_model_weights)
+                if current_vl_loss <= np.min(vl_loss):
+                    patience_index = patience
+                    best_model_weights = copy.deepcopy(self.layers)                     ###########
 
-                            self.hidden_layers = self.layers[:-1]
-                            self.output_layer = self.layers[-1]
+                elif current_vl_loss > np.min(vl_loss) - 1e-4:
+                    patience_index -= 1
 
-                            break
+            else:
+                raise ValueError('monitor parameter must be "val_loss"')
             # print(f"validation loss in this run {loss}\n\n")
 
-            O_tr = np.array([self.feed_forward(x) for x in X_tr])
-            tr_loss.append(loss_funct(O_tr,T_tr))
+            tr_loss.append(self.loss_calculator(X_tr, T_tr, loss_func))
 
-            self.tr_loss = tr_loss
+
+        print(f"Early stopping at epoch: {current_epoch}" if patience_index == 0 else "Max epoch reached")
+
+        self.layers = copy.deepcopy(best_model_weights)                             #############
+
+        self.hidden_layers = self.layers[:-1]
+        self.output_layer = self.layers[-1]
+
+        self.tr_loss = tr_loss
+        self.vl_loss = vl_loss
     
-    def validation_loss(self,X,T,loss_func):
-
-                
-        predictions = np.array([self.feed_forward(x) for x in X])
-        loss = losses.losses_functions[loss_func](predictions,T)
-
-
+    def loss_calculator(self, X_vl, T_vl, loss_func):
+        predictions = np.array([self.feed_forward(x) for x in X_vl])
+        loss = loss_func(predictions, T_vl)
         return loss
 
     def test(self, X, T):
@@ -294,20 +294,20 @@ class NeuralNetwork:
         if self.tr_loss != None:
             plt.figure(figsize=(10,5))
             plt.plot(self.tr_loss, c='r', linestyle='-', label='Training')
-            if self.ts_loss:
-                plt.plot(self.ts_loss, c='b', linestyle='--', label='Test')
+            if self.vl_loss != None:
+                plt.plot(self.vl_loss, c='b', linestyle='--', label='Validation')
             plt.xlabel("Epochs")
-            plt.ylabel("Loss / Test loss" if self.ts_loss else "Loss")
+            plt.ylabel("Loss / Validation loss" if self.vl_loss else "Loss")
             plt.legend()
             plt.grid()
 
         if self.tr_accuracy != None:
             plt.figure(figsize=(10,5))
             plt.plot(self.tr_accuracy, c='r', linestyle='-', label='Training')
-            if self.ts_accuracy:
-                plt.plot(self.ts_accuracy, c='b', linestyle='--', label='Test')
+            if self.vl_accuracy != None:
+                plt.plot(self.vl_accuracy, c='b', linestyle='--', label='Validation')
             plt.xlabel("Epochs")
-            plt.ylabel("Accuracy / Test accuracy" if self.ts_accuracy else "Accuracy")
+            plt.ylabel("Accuracy / Validation accuracy" if self.ts_accuracy else "Accuracy")
             plt.legend()
             plt.grid()
 

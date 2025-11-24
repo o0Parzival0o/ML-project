@@ -1,7 +1,7 @@
 {
   "architecture": {
       "output_units": 1,
-      "neurons_per_layer": [[3,3]]
+      "neurons_per_layer": [[3,3], [3,2], [4]]
   },
   "functions": {
       "hidden": ["relu"],
@@ -9,8 +9,8 @@
       "loss": ["MSE"]
   },
   "training": {
-      "epochs": [140,180,210],
-      "learning_rate": [0.01,0.05],
+      "epochs": 3000,
+      "learning_rate": [0.001,0.05, 0.1],
       "momentum": [0.85],
       "batch": {
           "batch_size": ["full"],

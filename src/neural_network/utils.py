@@ -20,7 +20,7 @@ def create_random_extractor(method):
     
 def data_splitting(X, T, proportions=[1,0,0]):
     if any(prop < 0 for prop in proportions):
-        raise ValueError("Le proporzioni devono essere >= 0")
+        raise ValueError('Elements in "proportions" must be greater or equal than 0')
     
     if sum(proportions) == 1:
         n = len(X)
@@ -40,7 +40,7 @@ def data_splitting(X, T, proportions=[1,0,0]):
         return (*X_splits, *T_splits)
     
     else:
-        raise ValueError("Sum over proportions list is not 1")
+        raise ValueError('Sum over "proportions" list is not 1')
 
 def flatten_config(d, parent_key='', sep='.'):
 
@@ -60,7 +60,7 @@ def flatten_config(d, parent_key='', sep='.'):
             
     return dict(items)
 
-def set_dict(d,k,v,sep="."):
+def set_dict(d, k, v, sep="."):
     keys = k.split(sep)
     for key in keys[:-1]:
         d = d.setdefault(key, {})
