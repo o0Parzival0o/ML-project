@@ -173,6 +173,7 @@ class NeuralNetwork:
         vl_accuracy = []
 
         tr_loss.append(self.loss_calculator(X_tr, T_tr, loss_func))                 # loss 0: with random parameters
+        tr_accuracy.append(self.accuracy_calculator(X_tr, T_tr))
 
         if early_stopping_cond and monitor == "val_loss":
             vl_loss.append(self.loss_calculator(X_vl, T_vl, loss_func))
@@ -245,23 +246,48 @@ class NeuralNetwork:
             else:
                 raise TypeError('batch_size is not positive int or "full".')
 
+            current_vl_loss = self.loss_calculator(X_vl, T_vl, loss_func)
+            vl_loss.append(current_vl_loss)
+            current_vl_accuracy = self.accuracy_calculator(X_vl, T_vl)
+            vl_accuracy.append(current_vl_accuracy)
+            
             #check if vl increases
             if monitor == "val_loss":
-                current_vl_loss = self.loss_calculator(X_vl, T_vl, loss_func)
-                vl_loss.append(current_vl_loss)
+                
+                rel_epsilon1 = 0.005                                                         # "sensibility" of early stopping
+                rel_epsilon2 = 0.0005
 
-                if current_vl_loss <= np.min(vl_loss):
+                if current_vl_loss <= np.min(vl_loss[:-1]) * (1 - rel_epsilon1):
                     patience_index = patience
                     best_model_weights = copy.deepcopy(self.layers)                     ###########
 
-                elif current_vl_loss > np.min(vl_loss) - 1e-4:
+                elif current_vl_loss > np.min(vl_loss[:-1]) * (1 + rel_epsilon2):
                     patience_index -= 1
+                
+                else:
+                    pass
+
+            elif monitor == "val_accuracy":
+
+                rel_epsilon1 = 0.0005                                                        # "sensibility" of early stopping
+                rel_epsilon2 = 0.002
+
+                if current_vl_accuracy <= np.max(vl_accuracy[:-1]) * (1 - rel_epsilon1):
+                    patience_index = patience
+                    best_model_weights = copy.deepcopy(self.layers)                     ###########
+
+                elif current_vl_accuracy > np.max(vl_accuracy[:-1]) * (1 + rel_epsilon2):
+                    patience_index -= 1
+                
+                else:
+                    pass
 
             else:
-                raise ValueError('monitor parameter must be "val_loss"')
+                raise ValueError('monitor parameter must be "val_loss" or "val_accuracy"')
             # print(f"validation loss in this run {loss}\n\n")
 
             tr_loss.append(self.loss_calculator(X_tr, T_tr, loss_func))
+            tr_accuracy.append(self.accuracy_calculator(X_tr, T_tr))
 
 
         print(f"Early stopping at epoch: {current_epoch}" if patience_index == 0 else "Max epoch reached")
@@ -273,11 +299,23 @@ class NeuralNetwork:
 
         self.tr_loss = tr_loss
         self.vl_loss = vl_loss
+        if len(tr_accuracy) != 0:
+            self.tr_accuracy = tr_accuracy
+            self.vl_accuracy = vl_accuracy
     
-    def loss_calculator(self, X_vl, T_vl, loss_func):
-        predictions = np.array([self.feed_forward(x) for x in X_vl])
-        loss = loss_func(predictions, T_vl)
+    def loss_calculator(self, X, T, loss_func):
+        predictions = np.array([self.feed_forward(x) for x in X])
+        loss = loss_func(predictions, T)
         return loss
+    
+    def accuracy_calculator(self, X, T):
+        correct_predict = 0
+        for x,t in zip(X,T):
+            predictions = self.feed_forward(x)
+            if (self.output_activation.__name__ == "sigmoid" and (predictions >= 0.5 and t == 1 or predictions < 0.5 and t == 0)) or (self.output_activation.__name__ == "tanh" and (predictions >= 0. and t == 1 or predictions < 0. and t == 0)):
+                correct_predict += 1
+        accuracy = correct_predict / len(T)
+        return accuracy
 
     def test(self, X, T):
         correct_predict = 0
@@ -290,27 +328,50 @@ class NeuralNetwork:
         accuracy = correct_predict/len(T)
         print(f"The model obtained an accuracy of {accuracy:.2%} on test set")
     
-    def plot_metrics(self):
-        if self.tr_loss != None:
-            plt.figure(figsize=(10,5))
-            plt.plot(self.tr_loss, c='r', linestyle='-', label='Training')
+    def plot_metrics(self, fig_loss=None, fig_acc=None, rows=1, cols=1, plot_index=0, changing_hyperpar=None):
+
+        if changing_hyperpar:
+            params_str = " / ".join(
+                f"{key.split('.')[-1]}: {value}"
+                for key, value in changing_hyperpar.items()
+            )
+        
+        if self.tr_loss != None and fig_loss:
+            ax_loss = fig_loss.add_subplot(rows, cols, plot_index + 1)
+            ax_loss.plot(self.tr_loss, c='r', linestyle='-', label='Training')
             if self.vl_loss != None:
-                plt.plot(self.vl_loss, c='b', linestyle='--', label='Validation')
-            plt.xlabel("Epochs")
-            plt.ylabel("Loss / Validation loss" if self.vl_loss else "Loss")
-            plt.legend()
-            plt.grid()
+                ax_loss.plot(self.vl_loss, c='b', linestyle='--', label='Validation')
+            if plot_index >= rows * (cols - 1):
+                ax_loss.set_xlabel("Epochs")
+            if plot_index % cols == 0:
+                ax_loss.set_ylabel("Loss / Validation loss" if self.vl_loss else "Loss")
+            if changing_hyperpar:
+                ax_loss.set_title(f"Trial {plot_index+1} (VL: {self.vl_loss[-1]:.4f}):\n{params_str}", fontsize=8, fontweight='bold')
+            ax_loss.legend(fontsize=7)
+            ax_loss.grid()
+            # ax_loss.set_yscale('log')
 
-        if self.tr_accuracy != None:
-            plt.figure(figsize=(10,5))
-            plt.plot(self.tr_accuracy, c='r', linestyle='-', label='Training')
+        if self.tr_accuracy != None and fig_acc:
+            ax_acc = fig_acc.add_subplot(rows, cols, plot_index + 1)
+            ax_acc.plot(self.tr_accuracy, c='r', linestyle='-', label='Training')
             if self.vl_accuracy != None:
-                plt.plot(self.vl_accuracy, c='b', linestyle='--', label='Validation')
-            plt.xlabel("Epochs")
-            plt.ylabel("Accuracy / Validation accuracy" if self.ts_accuracy else "Accuracy")
-            plt.legend()
-            plt.grid()
+                ax_acc.plot(self.vl_accuracy, c='b', linestyle='--', label='Validation')
+            if plot_index >= rows * (cols - 1):
+                ax_acc.set_xlabel("Epochs")
+            if plot_index % cols == 0:
+                ax_acc.set_ylabel("Accuracy / Validation accuracy" if self.ts_accuracy else "Accuracy")
+            if changing_hyperpar:
+                ax_acc.set_title(f"Trial {plot_index+1} (VL: {self.vl_loss[-1]:.4f}):\n{params_str}", fontsize=8, fontweight='bold')
+            ax_acc.legend(fontsize=7)
+            ax_acc.grid()
 
-        plt.show()
+        if plot_index == rows * cols - 1:
+            if fig_loss:
+                fig_loss.subplots_adjust(hspace=0.5)
+            if fig_acc:
+                fig_acc.subplots_adjust(hspace=0.5)
+            # plt.tight_layout()
+            plt.show()
+        
 
 
