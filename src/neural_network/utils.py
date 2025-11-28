@@ -11,7 +11,7 @@ def load_config_json(filepath):
 
 #can choose between different extraction methods for the weights/biases
 def create_random_extractor(method):
-    if(method == "standard"):
+    if(method == "random"):
         def extractor_function():
             return random.uniform(-0.7,0.7)
         return extractor_function

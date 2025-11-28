@@ -6,10 +6,10 @@
   "functions": {
       "hidden": ["relu"],
       "output": ["sigmoid"],
-      "loss": ["MSE"]
+      "loss": ["binary_crossentropy"]
   },
   "training": {
-      "epochs": 3000,
+      "epochs": 5000,
       "learning_rate": [0.001,0.05, 0.1],
       "momentum": [0.85],
       "batch": {
@@ -31,7 +31,7 @@
         "method": "hold_out"
   },
   "initialization": {
-      "method": ["standard"]
+      "method": ["random"]
   },
   "paths": {
       "MONK_train_data": "../../MONK files/monks-1.train",

@@ -10,8 +10,14 @@ def MEE(o, t):
     diff = o - t
     return np.mean(np.sqrt(np.sum(diff**2, axis=1)))
 
+def binary_crossentropy(o, t):
+    t = t.astype(float)
+    bce = - (t * np.log(o) + (1 - t) * np.log(1 - o))
+    return np.mean(np.sum(bce, axis=1))
+
 
 losses_functions ={
     "MSE": MSE,
-    "MEE": MEE
+    "MEE": MEE,
+    "binary_crossentropy": binary_crossentropy
 }

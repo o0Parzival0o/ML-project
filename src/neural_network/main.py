@@ -3,6 +3,8 @@ from model import NeuralNetwork
 from data_loader import data_loader
 from model_selection import perform_search
 
+import matplotlib.pyplot as plt
+
 import random
 import time
 
@@ -72,7 +74,9 @@ if __name__ == "__main__":
     end = time.time() - start
     print(f"Elapsed time: {end} s")
 
-    # nn.plot_metrics()
+    # fig1 = plt.figure(figsize=(5, 4))
+    # fig2 = plt.figure(figsize=(5, 4))
+    # nn.plot_metrics(fig1, fig2)
     
 
     #print(nn)

@@ -1,16 +1,16 @@
 {
   "architecture": {
       "output_units": 1,
-      "neurons_per_layer": [3,3]
+      "neurons_per_layer": [3]
   },
   "functions": {
       "hidden": "relu",
       "output": "sigmoid",
-      "loss": "MSE"
+      "loss": "binary_crossentropy"
   },
   "training": {
-      "epochs": 1000,
-      "learning_rate": 0.02,
+      "epochs": 5000,
+      "learning_rate": 0.01,
       "momentum": 0.85,
       "batch": {
           "batch_size": "full",
@@ -31,7 +31,7 @@
     "method": "hold_out"
   },
   "initialization": {
-      "method": "standard"
+      "method": "random"
   },
   "paths": {
       "MONK_train_data": "../../MONK files/monks-1.train",
