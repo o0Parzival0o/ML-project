@@ -331,10 +331,7 @@ class NeuralNetwork:
     def plot_metrics(self, fig_loss=None, fig_acc=None, rows=1, cols=1, plot_index=0, changing_hyperpar=None):
 
         if changing_hyperpar:
-            params_str = " / ".join(
-                f"{key.split('.')[-1]}: {value}"
-                for key, value in changing_hyperpar.items()
-            )
+            params_str = " / ".join(f"{key.split('.')[-1]}: {value}" for key, value in changing_hyperpar.items())
         
         if self.tr_loss != None and fig_loss:
             ax_loss = fig_loss.add_subplot(rows, cols, plot_index + 1)
@@ -368,8 +365,10 @@ class NeuralNetwork:
         if plot_index == rows * cols - 1:
             if fig_loss:
                 fig_loss.subplots_adjust(hspace=0.5)
+                fig_loss.savefig('loss.png', dpi=300)
             if fig_acc:
                 fig_acc.subplots_adjust(hspace=0.5)
+                fig_acc.savefig('accuracy.png', dpi=300)
             # plt.tight_layout()
             plt.show()
         

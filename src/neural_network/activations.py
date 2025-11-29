@@ -1,5 +1,11 @@
 import numpy as np
 
+def linear(x):
+    return x
+
+def d_linear(x):
+    return 1
+
 def sigmoid(x, a=1):
     return 1 / (1 + np.exp(-x*a))
 
@@ -26,6 +32,7 @@ def d_softplus(x):
 
 
 activation_functions = {
+    "linear": [linear, d_linear],
     "sigmoid": [sigmoid, d_sigmoid],
     "tanh": [tanh, d_tanh],
     "relu": [relu, d_relu],

@@ -1,25 +1,27 @@
 {
   "architecture": {
       "output_units": 1,
-      "neurons_per_layer": [[3,3], [3,2], [4]]
+      "neurons_per_layer": [[1], [6]]
   },
   "functions": {
-      "hidden": ["relu"],
-      "output": ["sigmoid"],
-      "loss": ["binary_crossentropy"]
+      "hidden": "relu",
+      "output": "sigmoid",
+      "loss": "binary_crossentropy"
   },
   "training": {
       "epochs": 5000,
-      "learning_rate": [0.001,0.05, 0.1],
+      "search_type": "random",
+      "number_random_trials": 25,
+      "learning_rate": [0.001, 0.05],
       "momentum": [0.85],
       "batch": {
-          "batch_size": ["full"],
-          "drop_last": [true]
+          "batch_size": "full",
+          "drop_last": true
       },
       "early_stopping": {
-          "enabled": [true],
-          "patience": [10],
-          "monitor": ["val_loss"]
+          "enabled": true,
+          "patience": 20,
+          "monitor": "val_loss"
       },
       "splitting": {
           "tr": 0.50,
@@ -31,7 +33,7 @@
         "method": "hold_out"
   },
   "initialization": {
-      "method": ["random"]
+      "method": "random"
   },
   "paths": {
       "MONK_train_data": "../../MONK files/monks-1.train",
@@ -40,6 +42,6 @@
       "CUP_test_data": "../../ML-25-PRJ lecture amp package-20251112/ML-CUP25-TS.csv"
   },
   "general": {
-      "seed": [42]
+      "seed": 42
   }
 }

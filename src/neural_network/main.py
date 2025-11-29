@@ -29,8 +29,9 @@ if __name__ == "__main__":
 
     # # EXAM DATASET
     # CUP_train_data = config["paths"]["CUP_train_data"]
-    # X_train, t_train, input_units = data_loader(CUP_train_data, shuffle=False)
-    # X_CUP, t_CUP, input_units = data_loader(CUP_test_data, shuffle=False)
+    # CUP_test_data = config["paths"]["CUP_test_data"]
+    # X_train, T_train, input_units = data_loader(CUP_train_data, shuffle=False)
+    # X_CUP, T_CUP, input_units_CUP = data_loader(CUP_test_data, shuffle=False)
 
     hidden_act_func = config["functions"]["hidden"]
     output_act_func = config["functions"]["output"]
@@ -44,7 +45,7 @@ if __name__ == "__main__":
     extractor = utils.create_random_extractor(config["initialization"]["method"])
 
     # data_split_prop = [training_hyperpar["splitting"]["tr"], training_hyperpar["splitting"]["vl"], training_hyperpar["splitting"]["ts"]]
-    # X_train, X_val, _, T_train, T_val, _ = utils.data_splitting(X_train, T_train, data_split_prop)
+    # X_train, X_val, X_test, T_train, T_val, T_test = utils.data_splitting(X_train, T_train, data_split_prop)
 
     data_split_prop = [0.7, 0.3]
     X_train, X_val, T_train, T_val = utils.data_splitting(X_train, T_train, data_split_prop)
@@ -65,7 +66,10 @@ if __name__ == "__main__":
     #TODO nn validate da fare
     #TODO uniformare impostazione seed randomico da json nei vari file py, non so se sia per come funziona rand ma per ora l'inizializzazione mi sembra essere diversa tra run diverse
     
-    search_type = "grid"
+    
+    config = utils.load_config_json("model_selection_config.json")
+    search_type = config["training"]["search_type"]
+    
     perform_search(training_sets, input_units, search_type)
 
 

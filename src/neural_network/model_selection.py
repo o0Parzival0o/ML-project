@@ -24,7 +24,6 @@ def grid_search(training_sets, input_units):
             utils.set_dict(new_config, k, v)
         trials.append(new_config)
 
-    #TODO ricontollare questa parte
     # identify which key changes
     flattened_trials = [utils.flatten_config(trial) for trial in trials]
     all_keys = flattened_trials[0].keys()
@@ -34,10 +33,7 @@ def grid_search(training_sets, input_units):
         values_for_key = [trial[key] for trial in flattened_trials]
         unique_values = set()
         for v in values_for_key:
-            if isinstance(v, list):
-                unique_values.add(tuple(v))
-            else:
-                unique_values.add(v)
+            unique_values.add(tuple(v))
         
         if len(unique_values) > 1:
             changing_keys.append(key)
@@ -58,7 +54,7 @@ def grid_search(training_sets, input_units):
     best_vl_loss = []
     networks_tried = []
     for i, trial in enumerate(trials):
-        loss, nn = launch_trial(trial, training_sets, input_units, i)
+        loss, nn = launch_trial(trial, training_sets, input_units)
         networks_tried.append((loss, nn))
         
         best_vl_loss = [loss, i] if not best_vl_loss or loss < best_vl_loss[0] else best_vl_loss
@@ -68,8 +64,95 @@ def grid_search(training_sets, input_units):
     print(f"The best combination is:\n{trials[best_vl_loss[1]]}\n\nwith a vl loss of {best_vl_loss[0]}\n\n\n")
     #TODO ricordarsi di rifare training del modello con parametri ottimi dopo la vl
 
+def random_search(training_sets, input_units):
+    config = utils.load_config_json("model_selection_config.json")
 
-def launch_trial(comb, training_sets, input_units, trial_num):
+    flattened_values = utils.flatten_config(config)
+
+    keys, values = zip(*flattened_values.items())
+
+    hyperpar_error = []
+    hyperpar_bounded = []
+    hyperpar_constant = []
+    for idx, val in enumerate(values):
+        if len(val) == 1:
+            hyperpar_constant.append(keys[idx])
+        elif len(val) == 2:
+            hyperpar_bounded.append(keys[idx])
+        elif len(val) > 2:
+            hyperpar_error.append(keys[idx])
+    if len(hyperpar_error) != 0:
+        raise ValueError(f'The hyperparameter bounds must be 2 for random search. The hyperparameter(s) that create problem are:{hyperpar_error}')
+
+
+    trials = []
+    num_trials = config["training"]["number_random_trials"]
+    for _ in range(num_trials):
+        new_config = {}
+        
+        for k, v in zip(keys, values):
+
+            if k in hyperpar_constant:
+                random_value = v[0]
+
+            if k in hyperpar_bounded:
+
+                if isinstance(v[0], int) and isinstance(v[1], int):
+                    random_value = np.random.randint(v[0], v[1] + 1)
+
+                elif isinstance(v[0], float) or isinstance(v[1], float):
+                    random_value = np.round(np.random.uniform(v[0], v[1]), 4)                           #################
+
+                elif isinstance(v[0], list) and isinstance(v[0][0], int):
+                    random_value = [np.random.randint(v[0][i], v[1][i] + 1) for i in range(len(v[0]))]
+                
+                else:
+                    raise TypeError(f"Unexpected type: {k}")
+                
+            utils.set_dict(new_config, k, random_value)
+        
+        trials.append(new_config)
+
+    # identify which key changes
+    flattened_trials = [utils.flatten_config(trial) for trial in trials]
+    all_keys = flattened_trials[0].keys()
+    
+    changing_keys = []
+    for key in all_keys:
+        values_for_key = [trial[key] for trial in flattened_trials]
+        unique_values = set()
+        for v in values_for_key:
+            unique_values.add(tuple(v))
+        
+        if len(unique_values) > 1:
+            changing_keys.append(key)
+    
+    # identify which parameter changes
+    changing_hyperpar = []
+    for trial in flattened_trials:
+        trial_changing = {k: trial[k] for k in changing_keys}
+        changing_hyperpar.append(trial_changing)
+
+    n_cols = int(np.ceil(np.sqrt(num_trials)))
+    n_rows = int(np.ceil(num_trials / n_cols))
+    
+    fig_loss = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
+    fig_acc = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
+
+    best_vl_loss = []
+    networks_tried = []
+    for i, trial in enumerate(trials):
+        loss, nn = launch_trial(trial, training_sets, input_units)
+        networks_tried.append((loss, nn))
+        
+        best_vl_loss = [loss, i] if not best_vl_loss or loss < best_vl_loss[0] else best_vl_loss
+
+        nn.plot_metrics(fig_loss=fig_loss, fig_acc=fig_acc, rows=n_rows, cols=n_cols, plot_index=i, changing_hyperpar=changing_hyperpar[i])
+
+    print(f"The best combination is:\n{trials[best_vl_loss[1]]}\n\nwith a vl loss of {best_vl_loss[0]}\n\n\n")
+    #TODO ricordarsi di rifare training del modello con parametri ottimi dopo la vl
+
+def launch_trial(comb, training_sets, input_units):
     print(f"Parameters:\n{comb}\n")
 
     X_train, X_val, T_train, T_val = training_sets
@@ -108,5 +191,7 @@ def launch_trial(comb, training_sets, input_units, trial_num):
 def perform_search(training_sets, input_units, search_type):
     if search_type == "grid":
         return grid_search(training_sets, input_units)
+    if search_type == "random":
+        return random_search(training_sets, input_units)
     else:
         raise ValueError('"search_type" must be "grid" or "random"')
