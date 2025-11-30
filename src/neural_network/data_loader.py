@@ -27,32 +27,32 @@ def preprocess_monk(path_file):
     input_units_number = one_hot_encoding.shape[1]
     return one_hot_encoding, targets, input_units_number
 
-def preprocess_exam_file(file_path):
+def preprocess_exam_file(file_path, file_type):
     """ Preprocess the exam dataset.  Returns the targets and the number of input units."""
     data = pd.read_csv(file_path, sep=",", header=None, comment='#')
 
     # the lasts 4 columns in the dataset are the targets, the remaining values are the pattern and examples index
-    targets = data[data.columns[-4:]]
+    targets = None
+    if file_type == "train":
+        targets = data[data.columns[-4:]]
+        data = data.drop(data.columns[-4:], axis=1)
 
-    X = data[data.columns[1:-4]]            # delete idx column
-
-    #removing target and name
-    patterns = data.drop(data.columns[-4:], axis=1)
-    patterns = patterns.drop(data.columns[0], axis=1)
+    X = data[data.columns[1:]]            # delete idx column
 
     input_units_number = X.shape[1]
     return X, targets, input_units_number
 
-def data_loader(file_path, shuffle=False):
+def data_loader(file_path, data_type=None, shuffle=False):
     if "monks" in file_path:
         X, t, input_units = preprocess_monk(file_path)
     else:
-        X, t, input_units = preprocess_exam_file(file_path)
+        X, t, input_units = preprocess_exam_file(file_path, data_type)
 
     X = X.to_numpy()
-    t = t.to_numpy()
-    if t.ndim == 1:                         # if dim == 1, we have a 1D vector (num_patt,) but we want 2D vector (num_patt, 1)
-        t = t.reshape(-1, 1)
+    if data_type == "train" or data_type == "MONK":
+        t = t.to_numpy()
+        if t.ndim == 1:                         # if dim == 1, we have a 1D vector (num_patt,) but we want 2D vector (num_patt, 1)
+            t = t.reshape(-1, 1)
     idx = np.arange((len(X)))
 
     if shuffle:

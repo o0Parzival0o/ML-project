@@ -1,12 +1,12 @@
 {
   "architecture": {
-      "output_units": 4,
+      "output_units": 1,
       "neurons_per_layer": [[1], [6]]
   },
   "functions": {
       "hidden": "relu",
-      "output": "linear",
-      "loss": "MEE"
+      "output": "sigmoid",
+      "loss": "binary_crossentropy"
   },
   "training": {
       "epochs": 5000,
@@ -25,9 +25,8 @@
           "monitor": "val_loss"
       },
       "splitting": {
-          "tr": 0.50,
-          "vl": 0.25,
-          "ts":0.25
+          "tr": 0.75,
+          "vl": 0.25
       }
   },
     "validation": {
@@ -37,8 +36,8 @@
       "method": "random"
   },
   "paths": {
-      "train_data": "../../ML-25-PRJ lecture amp package-20251112/ML-CUP25-TR.csv",
-      "test_data": "../../ML-25-PRJ lecture amp package-20251112/ML-CUP25-TS.csv"
+      "train_data": "../../MONK files/monks-1.train",
+      "test_data": "../../MONK files/monks-1.test"
   },
   "general": {
       "seed": 42

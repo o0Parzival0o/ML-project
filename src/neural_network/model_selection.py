@@ -9,8 +9,7 @@ import matplotlib.pyplot as plt
 
 np.random.seed(42)
 
-def grid_search(training_sets, input_units):
-    config = utils.load_config_json("model_selection_config.json")
+def grid_search(training_sets, input_units, config):
 
     flattened_values = utils.flatten_config(config)
 
@@ -64,8 +63,7 @@ def grid_search(training_sets, input_units):
     print(f"The best combination is:\n{trials[best_vl_loss[1]]}\n\nwith a vl loss of {best_vl_loss[0]}\n\n\n")
     #TODO ricordarsi di rifare training del modello con parametri ottimi dopo la vl
 
-def random_search(training_sets, input_units):
-    config = utils.load_config_json("model_selection_config.json")
+def random_search(training_sets, input_units, config):
 
     flattened_values = utils.flatten_config(config)
 
@@ -97,11 +95,14 @@ def random_search(training_sets, input_units):
 
             if k in hyperpar_bounded:
 
-                if isinstance(v[0], int) and isinstance(v[1], int):
+                if k == "momentum":
+                    random_value = utils.loguniform(v[0], v[1])
+
+                elif isinstance(v[0], int) and isinstance(v[1], int):
                     random_value = np.random.randint(v[0], v[1] + 1)
 
                 elif isinstance(v[0], float) or isinstance(v[1], float):
-                    random_value = np.round(np.random.uniform(v[0], v[1]), 4)                           #################
+                    random_value = np.round(np.random.uniform(v[0], v[1]), 4)                           # TODO rivedere il 4 (scelto arbitrariamente)
 
                 elif isinstance(v[0], list) and isinstance(v[0][0], int):
                     random_value = [np.random.randint(v[0][i], v[1][i] + 1) for i in range(len(v[0]))]
@@ -188,10 +189,11 @@ def launch_trial(comb, training_sets, input_units):
     return best_vl_loss, nn
 
 
-def perform_search(training_sets, input_units, search_type):
+def perform_search(training_sets, input_units, config):
+    search_type = config["training"]["search_type"]
     if search_type == "grid":
-        return grid_search(training_sets, input_units)
+        return grid_search(training_sets, input_units, config)
     if search_type == "random":
-        return random_search(training_sets, input_units)
+        return random_search(training_sets, input_units, config)
     else:
         raise ValueError('"search_type" must be "grid" or "random"')

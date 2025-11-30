@@ -26,10 +26,13 @@ class NeuronLayer:
         self.net = None
         self.outputs = None
 
-        self.deltas = None
+        self.bp_deltas = None
+
+        self.delta_weights_old = None
+        self.delta_biases_old = None
 
         self.weights_grad_acc = None
-        self.bias_grad_acc = None
+        self.biases_grad_acc = None
 
 class NeuralNetwork:
     """ Represents a multi-layer perceptron neural network. """
@@ -71,11 +74,15 @@ class NeuralNetwork:
         self.output_layer.biases = np.array([neuron.bias for neuron in self.output_layer.neurons])
 
         self.layers = self.hidden_layers + [self.output_layer]
+
+        for layer in self.layers:
+            layer.delta_weights_old = np.zeros_like(layer.weights)
+            layer.delta_biases_old = np.zeros_like(layer.biases)
         
 
         self.learning_rate = training_hyperpar["learning_rate"]
         self.momentum = training_hyperpar["momentum"]
-        # self.batch_size = training_hyperpar[2] TODO rimuovere se non serve (o nel caso leggere il valore corretto)
+        self.regularization = training_hyperpar["regularization"]
 
         self.early_stopping = early_stopping["enabled"]
         self.early_stopping_patience = early_stopping["patience"]
@@ -134,24 +141,31 @@ class NeuralNetwork:
         for layer in reversed(self.layers):
             # output layer
             if layer == self.output_layer:
-                layer.deltas = (target - layer.outputs) * self.d_output_activation(layer.net)   #TODO guardare se le formule di attivazione sono corrette                 # delta_k
+                layer.bp_deltas = (target - layer.outputs) * self.d_output_activation(layer.net)                       # delta_k
             # hidden layers
             elif layer in self.hidden_layers:
-                layer.deltas = (previous_weights.T @ previous_delta) * self.d_hidden_activation(layer.net)          # delta_j
+                layer.bp_deltas = (previous_weights.T @ previous_delta) * self.d_hidden_activation(layer.net)          # delta_j
             else:
                 raise Exception("Layer not recognized")
             
-            previous_delta, previous_weights = layer.deltas, layer.weights
+            previous_delta, previous_weights = layer.bp_deltas, layer.weights
 
 
     def weights_update(self, l):
         for layer in self.layers:
             if l == 1:
-                layer.weights = layer.weights + self.learning_rate * np.outer(layer.deltas, layer.inputs)
-                layer.biases = layer.biases + self.learning_rate * layer.deltas
+                delta_weights = self.learning_rate * np.outer(layer.bp_deltas, layer.inputs) + self.momentum * layer.delta_weights_old
+                delta_biases = self.learning_rate * layer.bp_deltas + self.momentum * layer.delta_biases_old
+                                
             else:
-                layer.weights = (layer.weights + self.learning_rate * (layer.weights_grad_acc)) 
-                layer.biases = (layer.biases + self.learning_rate * (layer.bias_grad_acc))
+                delta_weights = self.learning_rate * layer.weights_grad_acc + self.momentum * layer.delta_weights_old
+                delta_biases = self.learning_rate * layer.biases_grad_acc + self.momentum * layer.delta_biases_old
+            
+            layer.weights = layer.weights + delta_weights - self.regularization * layer.weights
+            layer.biases = layer.biases + delta_biases - self.regularization * layer.biases
+            
+            layer.delta_weight_old = delta_weights
+            layer.delta_biases_old = delta_biases
 
 
     def train(self, X_tr, T_tr, X_vl=None, T_vl=None, train_args=None, loss_func=None, early_stopping = None):
@@ -176,11 +190,8 @@ class NeuralNetwork:
         tr_accuracy.append(self.accuracy_calculator(X_tr, T_tr))
 
         if early_stopping_cond and monitor == "val_loss":
-            vl_loss.append(self.loss_calculator(X_vl, T_vl, loss_func))
-
-        prev_nn = []    
+            vl_loss.append(self.loss_calculator(X_vl, T_vl, loss_func))  
         
-        # for i in range(epochs):      #TODO usare early stopping o comunque altri parametri per capire dopo quante epoche fermarsi
         current_epoch = 0
         patience_index = patience
         while current_epoch < max_epochs and (patience_index > 0 if early_stopping_cond else True):
@@ -190,17 +201,17 @@ class NeuralNetwork:
                 #for batch gradient descent, i need to have a way to accumulate the gradient for each pattern with a shape like the weights
                 for layer in self.layers:
                     layer.weights_grad_acc = np.zeros_like(layer.weights)
-                    layer.bias_grad_acc = np.zeros_like(layer.biases)
+                    layer.biases_grad_acc = np.zeros_like(layer.biases)
             
                 #iterate on each pattern of and backprop
-                for x,t in zip(X_tr,T_tr):
+                for x,t in zip(X_tr, T_tr):
                     self.feed_forward(x)
                     self.back_prop(t)
 
                     #accumulate gradient
                     for layer in self.layers:
-                        layer.weights_grad_acc += np.outer(layer.deltas, layer.inputs)
-                        layer.bias_grad_acc += layer.deltas
+                        layer.weights_grad_acc += np.outer(layer.bp_deltas, layer.inputs)
+                        layer.biases_grad_acc += layer.bp_deltas
 
                 self.weights_update(len(X_tr))
 
@@ -208,7 +219,7 @@ class NeuralNetwork:
                 if batch_size != 1:
                     for layer in self.layers: 
                         layer.weights_grad_acc = np.zeros_like(layer.weights)
-                        layer.bias_grad_acc = np.zeros_like(layer.biases)
+                        layer.biases_grad_acc = np.zeros_like(layer.biases)
 
                     counter = 0
                     for x,t in zip(X_tr,T_tr):
@@ -219,14 +230,14 @@ class NeuralNetwork:
                         counter += 1
 
                         for layer in self.layers:
-                            layer.weights_grad_acc += np.outer(layer.deltas, layer.inputs)
-                            layer.bias_grad_acc += layer.deltas
+                            layer.weights_grad_acc += np.outer(layer.bp_deltas, layer.inputs)
+                            layer.biases_grad_acc += layer.bp_deltas
 
                         if counter == batch_size:
                             self.weights_update(counter)
                             for layer in self.layers: 
                                 layer.weights_grad_acc = np.zeros_like(layer.weights)
-                                layer.bias_grad_acc = np.zeros_like(layer.biases)
+                                layer.biases_grad_acc = np.zeros_like(layer.biases)
                             counter = 0
 
                     #flush update if necessary
@@ -254,7 +265,8 @@ class NeuralNetwork:
             #check if vl increases
             if monitor == "val_loss":
                 
-                rel_epsilon1 = 0.005                                                         # "sensibility" of early stopping
+                # "sensibility" of early stopping
+                rel_epsilon1 = 0.005
                 rel_epsilon2 = 0.0005
 
                 if current_vl_loss <= np.min(vl_loss[:-1]) * (1 - rel_epsilon1):
@@ -269,7 +281,8 @@ class NeuralNetwork:
 
             elif monitor == "val_accuracy":
 
-                rel_epsilon1 = 0.0005                                                        # "sensibility" of early stopping
+                # "sensibility" of early stopping
+                rel_epsilon1 = 0.0005
                 rel_epsilon2 = 0.002
 
                 if current_vl_accuracy <= np.max(vl_accuracy[:-1]) * (1 - rel_epsilon1):
@@ -321,44 +334,45 @@ class NeuralNetwork:
         correct_predict = 0
         for x,t in zip(X,T):
             o = self.feed_forward(x)
-            # print(f"Output {o}")
-            # print(f"Target {t}")
             if o >= 0.5 and t == 1 or o < 0.5 and t == 0:
                 correct_predict += 1
         accuracy = correct_predict/len(T)
         print(f"The model obtained an accuracy of {accuracy:.2%} on test set")
     
     def plot_metrics(self, fig_loss=None, fig_acc=None, rows=1, cols=1, plot_index=0, changing_hyperpar=None):
-
-        if changing_hyperpar:
-            params_str = " / ".join(f"{key.split('.')[-1]}: {value}" for key, value in changing_hyperpar.items())
         
         if self.tr_loss != None and fig_loss:
             ax_loss = fig_loss.add_subplot(rows, cols, plot_index + 1)
             ax_loss.plot(self.tr_loss, c='r', linestyle='-', label='Training')
             if self.vl_loss != None:
                 ax_loss.plot(self.vl_loss, c='b', linestyle='--', label='Validation')
+            if changing_hyperpar:
+                for k, v in changing_hyperpar.items():
+                    param_name = k.split(".")[-1]
+                    ax_loss.plot([], [], " ", label=f"{param_name}: {v}")
             if plot_index >= rows * (cols - 1):
                 ax_loss.set_xlabel("Epochs")
             if plot_index % cols == 0:
                 ax_loss.set_ylabel("Loss / Validation loss" if self.vl_loss else "Loss")
-            if changing_hyperpar:
-                ax_loss.set_title(f"Trial {plot_index+1} (VL: {self.vl_loss[-1]:.4f}):\n{params_str}", fontsize=8, fontweight='bold')
+            ax_loss.set_title(f"Trial {plot_index+1} (VL: {self.vl_loss[-1]:.4f})", fontsize=8, fontweight='bold')
             ax_loss.legend(fontsize=7)
             ax_loss.grid()
-            # ax_loss.set_yscale('log')
+            ax_loss.set_yscale('log')
 
         if self.tr_accuracy != None and fig_acc:
             ax_acc = fig_acc.add_subplot(rows, cols, plot_index + 1)
             ax_acc.plot(self.tr_accuracy, c='r', linestyle='-', label='Training')
             if self.vl_accuracy != None:
                 ax_acc.plot(self.vl_accuracy, c='b', linestyle='--', label='Validation')
+            if changing_hyperpar:
+                for k, v in changing_hyperpar.items():
+                    param_name = k.split(".")[-1]
+                    ax_acc.plot([], [], " ", label=f"{param_name}: {v}")
             if plot_index >= rows * (cols - 1):
                 ax_acc.set_xlabel("Epochs")
             if plot_index % cols == 0:
                 ax_acc.set_ylabel("Accuracy / Validation accuracy" if self.ts_accuracy else "Accuracy")
-            if changing_hyperpar:
-                ax_acc.set_title(f"Trial {plot_index+1} (VL: {self.vl_loss[-1]:.4f}):\n{params_str}", fontsize=8, fontweight='bold')
+            ax_acc.set_title(f"Trial {plot_index+1} (VL: {self.vl_loss[-1]:.4f})", fontsize=8, fontweight='bold')
             ax_acc.legend(fontsize=7)
             ax_acc.grid()
 
@@ -369,7 +383,7 @@ class NeuralNetwork:
             if fig_acc:
                 fig_acc.subplots_adjust(hspace=0.5)
                 fig_acc.savefig('accuracy.png', dpi=300)
-            # plt.tight_layout()
+            plt.tight_layout()
             plt.show()
         
 

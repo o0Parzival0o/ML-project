@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
 import random
 import json
@@ -18,6 +19,22 @@ def create_random_extractor(method):
     else:
         raise ValueError("Invalid method.")
     
+def normalization(X=None, T=None, type=None):
+    eps = 1e-8                              # for non zero std
+    if type == "standardization":
+        mean = np.mean(X, axis=0)
+        std = np.std(X, axis=0) + eps
+        return mean, std
+    elif type == "rescaling":                       # for rescaling, remember to do the inverse at the end with "inverse_scaling"
+        T_min = np.min(T, axis=0)
+        T_max = np.max(T, axis=0) + eps
+        return T_min, T_max
+    else:
+        raise ValueError('"type" is not "stardadization" nor "rescaling"')
+
+def inverse_scaling(T, T_min, T_max):
+    return T * (T_max - T_min) + T_min
+
 def data_splitting(X, T, proportions=[1,0,0]):
     if any(prop < 0 for prop in proportions):
         raise ValueError('Elements in "proportions" must be greater or equal than 0')
@@ -66,6 +83,8 @@ def set_dict(d, k, v, sep="."):
 
     d[keys[-1]] = v
 
+def loguniform(v0, v1):
+    return np.exp(np.random.uniform(np.log(v0), np.log(v1)))
 
 
 
