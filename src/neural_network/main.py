@@ -12,7 +12,7 @@ import time
 
 if __name__ == "__main__":
 
-    data = "MONK"
+    data = ""
     single_trial = False
 
     start = time.time()
@@ -75,14 +75,14 @@ if __name__ == "__main__":
         X_train, T_train, input_units = data_loader(CUP_train_data, data_type="train", shuffle=True)
         X_CUP, _, input_units_CUP = data_loader(CUP_test_data, data_type="test", shuffle=False)
 
+        CUP_mean, CUP_std = utils.normalization(X=X_train, type="standardization")
+        X_train = (X_train - CUP_mean) / CUP_std
+        X_CUP = (X_CUP - CUP_mean) / CUP_std
+
         data_split_prop = [config["training"]["splitting"]["tr"], config["training"]["splitting"]["vl"], config["training"]["splitting"]["ts"]]
         X_train, X_val, X_test, T_train, T_val, T_test = utils.data_splitting(X_train, T_train, data_split_prop)
 
         training_sets = [X_train, X_val, T_train, T_val]
-
-        # CUP_mean, CUP_std = utils.normalization(X=X_train, type="standardization")
-        # X_train = (X_train - CUP_mean) / CUP_std
-        # X_CUP = (X_CUP - CUP_mean) / CUP_std
 
         if single_trial:
 
@@ -108,7 +108,7 @@ if __name__ == "__main__":
                                early_stopping=early_stopping)
             
             nn.train(X_train, T_train, X_val, T_val, train_args=train_args, loss_func=loss_func, early_stopping=early_stopping)
-            nn.test(X_test, T_test)
+            # nn.test(X_test, T_test)
 
             fig1 = plt.figure(figsize=(5, 4))
             fig2 = plt.figure(figsize=(5, 4))

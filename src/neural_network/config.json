@@ -1,7 +1,7 @@
 {
   "architecture": {
       "output_units": 4,
-      "neurons_per_layer": [3]
+      "neurons_per_layer": [3,4,2,5]
   },
   "functions": {
       "hidden": "relu",
@@ -10,7 +10,7 @@
   },
   "training": {
       "epochs": 5000,
-      "learning_rate": 0.01,
+      "learning_rate": 0.001,
       "momentum": 0.85,
       "regularization": 0.0001,
       "batch": {

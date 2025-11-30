@@ -84,7 +84,7 @@ def set_dict(d, k, v, sep="."):
     d[keys[-1]] = v
 
 def loguniform(v0, v1):
-    return np.exp(np.random.uniform(np.log(v0), np.log(v1)))
+    return 10 ** np.random.uniform(np.log10(v0), np.log10(v1))
 
 
 

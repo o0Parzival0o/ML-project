@@ -266,8 +266,8 @@ class NeuralNetwork:
             if monitor == "val_loss":
                 
                 # "sensibility" of early stopping
-                rel_epsilon1 = 0.005
-                rel_epsilon2 = 0.0005
+                rel_epsilon1 = 0.001
+                rel_epsilon2 = 0.002
 
                 if current_vl_loss <= np.min(vl_loss[:-1]) * (1 - rel_epsilon1):
                     patience_index = patience
@@ -357,7 +357,7 @@ class NeuralNetwork:
             ax_loss.set_title(f"Trial {plot_index+1} (VL: {self.vl_loss[-1]:.4f})", fontsize=8, fontweight='bold')
             ax_loss.legend(fontsize=7)
             ax_loss.grid()
-            ax_loss.set_yscale('log')
+            # ax_loss.set_yscale('log')
 
         if self.tr_accuracy != None and fig_acc:
             ax_acc = fig_acc.add_subplot(rows, cols, plot_index + 1)

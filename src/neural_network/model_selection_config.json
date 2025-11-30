@@ -1,7 +1,7 @@
 {
   "architecture": {
       "output_units": 4,
-      "neurons_per_layer": [[1], [6]]
+      "neurons_per_layer": [[3,3,3,3], [10,10,10,10]]
   },
   "functions": {
       "hidden": "relu",
@@ -12,16 +12,16 @@
       "epochs": 5000,
       "search_type": "random",
       "number_random_trials": 9,
-      "learning_rate": [0.001, 0.05],
+      "learning_rate": [0.0001, 0.01],
       "momentum": [0.75, 0.95],
-      "regularization": [0.01, 0.000001],
+      "regularization": [0.001, 0.000001],
       "batch": {
-          "batch_size": "full",
+          "batch_size": 32,
           "drop_last": true
       },
       "early_stopping": {
           "enabled": true,
-          "patience": 20,
+          "patience": 50,
           "monitor": "val_loss"
       },
       "splitting": {
