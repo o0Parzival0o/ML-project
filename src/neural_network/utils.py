@@ -1,8 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
+import pandas as pd
 
 import random
 import json
+import os
 
 def load_config_json(filepath):
     """Loads the configuration from the specified JSON file."""
@@ -19,21 +22,23 @@ def create_random_extractor(method):
     else:
         raise ValueError("Invalid method.")
     
-def normalization(X=None, T=None, type=None):
+def standardization(X):
     eps = 1e-8                              # for non zero std
-    if type == "standardization":
-        mean = np.mean(X, axis=0)
-        std = np.std(X, axis=0) + eps
-        return mean, std
-    elif type == "rescaling":                       # for rescaling, remember to do the inverse at the end with "inverse_scaling"
-        T_min = np.min(T, axis=0)
-        T_max = np.max(T, axis=0) + eps
-        return T_min, T_max
-    else:
-        raise ValueError('"type" is not "stardardization" nor "rescaling"')
+    mean = np.mean(X, axis=0)
+    std = np.std(X, axis=0) + eps
+    return mean, std
+    
+def scaling(X):                        # remember to do the inverse at the end with "inverse_scaling"
+    eps = 1e-8                              # for non zero deltaX
+    X_min = np.min(X, axis=0)
+    X_max = np.max(X, axis=0) + eps
+    return X_min, X_max
 
-def inverse_scaling(T, T_min, T_max):
-    return T * (T_max - T_min) + T_min
+def inverse_standardization(X, X_mean, X_std):
+    return X * X_std + X_mean
+
+def inverse_scaling(X, X_min, X_max):
+    return X * (X_max - X_min) + X_min
 
 def data_splitting(X, T, proportions=[1,0,0]):
     if any(prop < 0 for prop in proportions):
@@ -124,6 +129,39 @@ def plot_dataset(X, T, X_test=None):
             plt.tight_layout()
             plt.savefig(f'../../plots/data_plot/plot_{i}_{j}.png', dpi=300)
             plt.close()
+
+def plot_correlation(X, T):
+
+    feature_names = [f"Feature {i}" for i in range(X.shape[1])]
+    target_names = [f"Target {i}" for i in range(T.shape[1])]
+    
+    df_X = pd.DataFrame(X, columns=feature_names)
+    corr_features = df_X.corr()
+    
+    # Plot
+    plt.figure(figsize=(12, 10))
+    sns.heatmap(corr_features, annot=True, fmt='.2f', cmap='coolwarm', center=0, vmin=-1, vmax=1, square=True)
+    plt.title('Correlation Matrix - Features', fontsize=16, fontweight='bold')
+    plt.tight_layout()
+    plt.savefig('../../plots/features_correlation.png', dpi=300)
+    plt.show()
+
+    df_T = pd.DataFrame(T, columns=target_names)
+    df_combined = pd.concat([df_X, df_T], axis=1)
+    corr_full = df_combined.corr()
+    
+    # Estrai solo correlazioni features-target
+    corr_feat_target = corr_full.loc[feature_names, target_names]
+    
+    # Plot
+    plt.figure(figsize=(8, 10))
+    sns.heatmap(corr_feat_target, annot=True, fmt='.2f', cmap='coolwarm', center=0, vmin=-1, vmax=1)
+    plt.title('Correlation: Features - Targets', fontsize=16, fontweight='bold')
+    plt.tight_layout()
+    plt.savefig('../../plots/features_target_correlation.png', dpi=300, bbox_inches='tight')
+    plt.show()
+    
+    return corr_features, corr_feat_target
 
 
 

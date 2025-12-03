@@ -12,7 +12,7 @@ import time
 
 if __name__ == "__main__":
 
-    data = "MONK"
+    data = "MONKs"
     single_trial = True
 
     start = time.time()
@@ -75,11 +75,15 @@ if __name__ == "__main__":
         X_train, T_train, input_units = data_loader(CUP_train_data, data_type="train", shuffle=True)
         X_CUP, _, input_units_CUP = data_loader(CUP_test_data, data_type="test", shuffle=False)
 
-        utils.plot_dataset(X_train, T_train, X_CUP)
+        # utils.plot_dataset(X_train, T_train, X_CUP)
 
-        train_mean, train_std = utils.normalization(X=X_train, type="standardization")
-        X_train = (X_train - train_mean) / train_std
-        X_CUP = (X_CUP - train_mean) / train_std
+        X_mean, X_std = utils.standardization(X_train)
+        T_mean, T_std = utils.standardization(T_train)
+        X_train = (X_train - X_mean) / X_std
+        T_train = (T_train - T_mean) / T_std
+        # X_CUP = (X_CUP - X_mean) / X_std              # remember to do the inverse at the end with "inverse_scaling"
+
+        corr_feat, corr_target = utils.plot_correlation(X_train, T_train)
 
         data_split_prop = [config["training"]["splitting"]["tr"], config["training"]["splitting"]["vl"], config["training"]["splitting"]["ts"]]
         X_train, X_val, X_test, T_train, T_val, T_test = utils.data_splitting(X_train, T_train, data_split_prop)
@@ -124,7 +128,7 @@ if __name__ == "__main__":
     print(f"Elapsed time: {end} s")
 
         
-        
+    # T_CUP = utils.inverse_standardization(T_CUP)
 
     #print(nn)
     #nn.plot()                                   # (da eliminare prima di mandare a Micheli)
