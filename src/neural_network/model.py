@@ -377,12 +377,12 @@ class NeuralNetwork:
             ax_acc.grid()
 
         if plot_index == rows * cols - 1:
-            if fig_loss:
+            if fig_loss is not None:
                 fig_loss.subplots_adjust(hspace=0.5)
-                fig_loss.savefig('loss.png', dpi=300)
-            if fig_acc:
+                fig_loss.savefig('../../plots/loss.png', dpi=300)
+            if fig_acc is not None:
                 fig_acc.subplots_adjust(hspace=0.5)
-                fig_acc.savefig('accuracy.png', dpi=300)
+                fig_acc.savefig('../../plots/accuracy.png', dpi=300)
             plt.tight_layout()
             plt.show()
         

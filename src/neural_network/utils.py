@@ -30,7 +30,7 @@ def normalization(X=None, T=None, type=None):
         T_max = np.max(T, axis=0) + eps
         return T_min, T_max
     else:
-        raise ValueError('"type" is not "stardadization" nor "rescaling"')
+        raise ValueError('"type" is not "stardardization" nor "rescaling"')
 
 def inverse_scaling(T, T_min, T_max):
     return T * (T_max - T_min) + T_min
@@ -85,6 +85,45 @@ def set_dict(d, k, v, sep="."):
 
 def loguniform(v0, v1):
     return 10 ** np.random.uniform(np.log10(v0), np.log10(v1))
+
+def plot_dataset(X, T, X_test=None):
+    for i in range(X.shape[1]):
+        for j in range(X.shape[1]):
+            if i <= j:
+                continue
+
+            target_size = T.shape[1]
+            
+            cols = int(np.ceil(np.sqrt(target_size)))
+            rows = int(np.ceil(target_size / cols))
+
+            fig, axes = plt.subplots(rows, cols, figsize=(cols * 4, rows * 4))
+
+            x_min, x_max = np.min(X[:, i]), np.max(X[:, i])
+            y_min, y_max = np.min(X[:, j]), np.max(X[:, j])
+
+            for k in range(target_size):
+                r = k // cols
+                c = k % cols
+                ax = axes[r][c]
+
+                if X_test is not None:
+                    ax.scatter(X_test[:,i], X_test[:,j], color='r', edgecolor="none", alpha=0.75, s=10, label='data CUP')
+                data = ax.scatter(X[:, i], X[:, j], c=T[:, k], edgecolor="none", alpha=0.75, s=10)
+
+                ax.set_xlim(x_min, x_max)
+                ax.set_ylim(y_min, y_max)
+
+                ax.set_title(f"Output {k}", fontsize=12, fontweight="bold")
+                ax.set_xlabel(f"Feature {i}")
+                ax.set_ylabel(f"Feature {j}")
+
+                color = fig.colorbar(data, ax=ax, shrink=0.85)
+                color.ax.tick_params(labelsize=8)
+
+            plt.tight_layout()
+            plt.savefig(f'../../plots/data_plot/plot_{i}_{j}.png', dpi=300)
+            plt.close()
 
 
 
