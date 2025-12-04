@@ -216,6 +216,10 @@ class NeuralNetwork:
                 self.weights_update(len(X_tr))
 
             elif isinstance(batch_size, int) and batch_size > 0:
+                perm = np.random.permutation(len(X_tr))
+                X_tr = X_tr[perm]
+                T_tr = T_tr[perm]
+                
                 if batch_size != 1:
                     for layer in self.layers: 
                         layer.weights_grad_acc = np.zeros_like(layer.weights)
@@ -244,10 +248,7 @@ class NeuralNetwork:
                     if counter != 0 and not batch_droplast:
                         self.weights_update(counter)
 
-                elif batch_size == 1:
-                    perm = np.random.permutation(len(X_tr))
-                    X_tr = X_tr[perm]
-                    T_tr = T_tr[perm]
+                elif batch_size == 1: 
                     for x,t in zip(X_tr,T_tr):
                         self.feed_forward(x)
                         self.back_prop(t)
