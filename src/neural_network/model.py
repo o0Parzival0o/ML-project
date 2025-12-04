@@ -164,7 +164,7 @@ class NeuralNetwork:
             layer.weights = layer.weights + delta_weights - self.regularization * layer.weights
             layer.biases = layer.biases + delta_biases - self.regularization * layer.biases
             
-            layer.delta_weight_old = delta_weights
+            layer.delta_weights_old = delta_weights
             layer.delta_biases_old = delta_biases
 
 

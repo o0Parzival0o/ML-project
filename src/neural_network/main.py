@@ -83,7 +83,7 @@ if __name__ == "__main__":
         T_train = (T_train - T_mean) / T_std
         # X_CUP = (X_CUP - X_mean) / X_std              # remember to do the inverse at the end with "inverse_scaling"
 
-        corr_feat, corr_target = utils.plot_correlation(X_train, T_train)
+        # utils.plot_correlation(X_train, T_train)
 
         data_split_prop = [config["training"]["splitting"]["tr"], config["training"]["splitting"]["vl"], config["training"]["splitting"]["ts"]]
         X_train, X_val, X_test, T_train, T_val, T_test = utils.data_splitting(X_train, T_train, data_split_prop)
