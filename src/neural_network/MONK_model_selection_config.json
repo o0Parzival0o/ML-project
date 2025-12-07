@@ -1,7 +1,7 @@
 {
   "architecture": {
       "output_units": 1,
-      "neurons_per_layer": [[1], [6]]
+      "neurons_per_layer": [[2], [4,2]]
   },
   "functions": {
       "hidden": "relu",
@@ -9,10 +9,10 @@
       "loss": "binary_crossentropy"
   },
   "training": {
-      "epochs": 5000,
-      "search_type": "random",
+      "epochs": 2000,
+      "search_type": "grid",
       "number_random_trials": 9,
-      "learning_rate": [0.001, 0.05],
+      "learning_rate": [0.001, 0.01],
       "momentum": [0.75, 0.95],
       "regularization": [0.01, 0.000001],
       "batch": {
@@ -30,7 +30,8 @@
       }
   },
     "validation": {
-        "method": "hold_out"
+        "method": "k_fold_cv",
+        "folds": 5
   },
   "initialization": {
       "method": "fan_in"

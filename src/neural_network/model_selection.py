@@ -3,6 +3,7 @@ import activations as actfun
 import losses
 import itertools
 from model import NeuralNetwork
+import math
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -50,18 +51,36 @@ def grid_search(training_sets, input_units, config):
     fig_loss = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
     fig_acc = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
 
-    best_vl_loss = []
+    best_vl_loss = None
+    best_trial_idx = -1
     networks_tried = []
     for i, trial in enumerate(trials):
-        loss, nn = launch_trial(trial, training_sets, input_units)
-        networks_tried.append((loss, nn))
+        print(f"\n--- Trial {i+1}/{len(trials)} ---")
+
+        loss = evaluate_configuration(trial, training_sets, input_units)
+
+        if best_vl_loss is None or loss < best_vl_loss:
+            best_vl_loss = loss
+            best_trial_idx = i
+            print(f"New best found! Loss: {best_vl_loss:.6f}")
+
+    best_config = trials[best_trial_idx]
+
+    X_full = np.concatenate((training_sets[0], training_sets[1]))
+    T_full = np.concatenate((training_sets[2], training_sets[3]))
+
+    final_loss, final_nn = launch_trial(best_config, [X_full, X_full, T_full, T_full], input_units, verbose=True)
+
+
+    return final_nn, best_config
+        # loss, nn = launch_trial(trial, training_sets, input_units)
+        # networks_tried.append((loss, nn))
         
-        best_vl_loss = [loss, i] if not best_vl_loss or loss < best_vl_loss[0] else best_vl_loss
+        # best_vl_loss = [loss, i] if not best_vl_loss or loss < best_vl_loss[0] else best_vl_loss
 
-        nn.plot_metrics(fig_loss=fig_loss, fig_acc=fig_acc, rows=n_rows, cols=n_cols, plot_index=i, changing_hyperpar=changing_hyperpar[i])
+        # nn.plot_metrics(fig_loss=fig_loss, fig_acc=fig_acc, rows=n_rows, cols=n_cols, plot_index=i, changing_hyperpar=changing_hyperpar[i])
 
-    print(f"The best combination is:\n{trials[best_vl_loss[1]]}\n\nwith a vl loss of {best_vl_loss[0]}\n\n\n")
-    #TODO ricordarsi di rifare training del modello con parametri ottimi dopo la vl
+    # print(f"The best combination is:\n{trials[best_vl_loss[1]]}\n\nwith a vl loss of {best_vl_loss[0]}\n\n\n")
 
 def random_search(training_sets, input_units, config):
 
@@ -140,21 +159,36 @@ def random_search(training_sets, input_units, config):
     fig_loss = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
     fig_acc = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
 
-    best_vl_loss = []
+    best_vl_loss = None
+    best_trial_idx = -1
     networks_tried = []
     for i, trial in enumerate(trials):
-        loss, nn = launch_trial(trial, training_sets, input_units)
-        networks_tried.append((loss, nn))
-        
-        best_vl_loss = [loss, i] if not best_vl_loss or loss < best_vl_loss[0] else best_vl_loss
+        print(f"\n--- Trial {i+1}/{len(trials)} ---")
 
-        nn.plot_metrics(fig_loss=fig_loss, fig_acc=fig_acc, rows=n_rows, cols=n_cols, plot_index=i, changing_hyperpar=changing_hyperpar[i])
+        loss = evaluate_configuration(trial, training_sets, input_units)
+
+        if best_vl_loss is None or loss < best_vl_loss:
+            best_vl_loss = loss
+            best_trial_idx = i
+            print(f"New best found! Loss: {best_vl_loss:.6f}")
+
+    best_config = trials[best_trial_idx]
+
+    X_full = np.concatenate((training_sets[0], training_sets[1]))
+    T_full = np.concatenate((training_sets[2], training_sets[3]))
+
+    final_loss, final_nn = launch_trial(best_config, [X_full, X_full, T_full, T_full], input_units, verbose=True)
+
+
+    return final_nn, best_config
+        # nn.plot_metrics(fig_loss=fig_loss, fig_acc=fig_acc, rows=n_rows, cols=n_cols, plot_index=i, changing_hyperpar=changing_hyperpar[i])
 
     print(f"The best combination is:\n{trials[best_vl_loss[1]]}\n\nwith a vl loss of {best_vl_loss[0]}\n\n\n")
     #TODO ricordarsi di rifare training del modello con parametri ottimi dopo la vl
 
-def launch_trial(comb, training_sets, input_units):
-    print(f"Parameters:\n{comb}\n")
+def launch_trial(comb, training_sets, input_units, verbose=True):
+    if verbose:
+        print(f"Parameters:\n{comb}\n")
 
     X_train, X_val, T_train, T_val = training_sets
 
@@ -184,16 +218,81 @@ def launch_trial(comb, training_sets, input_units):
     nn.train(X_train, T_train, X_val, T_val, train_args=train_args, loss_func=loss_func, early_stopping=early_stopping)
 
     best_vl_loss = nn.loss_calculator(X_val, T_val, losses.losses_functions[loss_func])
-    print(f"Best validation loss for this run: {best_vl_loss:.6f}\n")
+    if verbose:
+        print(f"Best validation loss for this run: {best_vl_loss:.6f}\n")
 
     return best_vl_loss, nn
 
 
 def perform_search(training_sets, input_units, config):
     search_type = config["training"]["search_type"]
+    
     if search_type == "grid":
         return grid_search(training_sets, input_units, config)
     if search_type == "random":
         return random_search(training_sets, input_units, config)
     else:
         raise ValueError('"search_type" must be "grid" or "random"')
+        
+
+def get_k_fold_indices(n_samples, k_folds):
+    folds_size = math.floor(n_samples / k_folds)
+    folds_remainder = n_samples % k_folds
+    
+    folds_indexes = []
+    start_index = 0
+    
+    for i in range(k_folds):
+        current_fold_size = folds_size + (1 if i < folds_remainder else 0)
+        current_end = start_index + current_fold_size
+        folds_indexes.append((start_index, current_end))
+        start_index = current_end
+        
+    return folds_indexes
+
+def evaluate_configuration(trial_config, training_sets, input_units):
+    """
+    Evaluates a single hyperparameter configuration using either 
+    Hold-Out or K-Fold CV based on the config.
+    """
+    vl_method = trial_config["validation"]["method"]
+
+    if vl_method == "hold_out":
+        loss, nn = launch_trial(trial_config, training_sets, input_units, verbose=False)
+        return loss
+
+    elif vl_method == "k_fold_cv":
+        k_folds = trial_config["validation"]["folds"]
+        
+        # Combine sets for k fold
+        X_full = np.concatenate((training_sets[0], training_sets[1]))
+        T_full = np.concatenate((training_sets[2], training_sets[3]))
+        
+        indices = get_k_fold_indices(len(X_full), k_folds)
+        
+        total_loss = 0
+        
+        # print(f"  Running {k_folds}-Fold CV...")
+        
+        for i in range(k_folds):
+            val_start, val_end = indices[i]
+            
+
+            X_val_k = X_full[val_start:val_end]
+            T_val_k = T_full[val_start:val_end]
+            
+
+            X_train_k = np.concatenate([X_full[:val_start], X_full[val_end:]])
+            T_train_k = np.concatenate([T_full[:val_start], T_full[val_end:]])
+            
+            current_sets = [X_train_k, X_val_k, T_train_k, T_val_k]
+            
+            loss, _ = launch_trial(trial_config, current_sets, input_units, verbose=False)
+            total_loss += loss
+            
+        avg_loss = total_loss / k_folds
+        print(f"  > Average {k_folds}-Fold Loss: {avg_loss:.6f}")
+        return avg_loss
+
+    else:
+        raise ValueError("Unknown validation method")

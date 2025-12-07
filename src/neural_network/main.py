@@ -13,7 +13,7 @@ import time
 if __name__ == "__main__":
 
     data = "MONK"
-    single_trial = True
+    single_trial = False
 
     start = time.time()
 
@@ -58,9 +58,9 @@ if __name__ == "__main__":
             nn.train(X_train, T_train, X_val, T_val, train_args=train_args, loss_func=loss_func, early_stopping=early_stopping)
             nn.test(X_test, T_test)
 
-            fig1 = plt.figure(figsize=(5, 4))
-            fig2 = plt.figure(figsize=(5, 4))
-            nn.plot_metrics(fig1, fig2)
+            # fig1 = plt.figure(figsize=(5, 4))
+            # fig2 = plt.figure(figsize=(5, 4))
+            # nn.plot_metrics(fig1, fig2)
 
         else:
             perform_search(training_sets, input_units, config)
@@ -116,9 +116,9 @@ if __name__ == "__main__":
             nn.train(X_train, T_train, X_val, T_val, train_args=train_args, loss_func=loss_func, early_stopping=early_stopping)
             # nn.test(X_test, T_test)
 
-            fig1 = plt.figure(figsize=(5, 4))
-            fig2 = plt.figure(figsize=(5, 4))
-            nn.plot_metrics(fig1, fig2)
+            # fig1 = plt.figure(figsize=(5, 4))
+            # fig2 = plt.figure(figsize=(5, 4))
+            # nn.plot_metrics(fig1, fig2)
         
         else:
             perform_search(training_sets, input_units, config)
