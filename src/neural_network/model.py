@@ -97,9 +97,9 @@ class NeuralNetwork:
 
     def init_weights(self, layer, num_prev_inputs):
         for neuron in layer.neurons:
-            neuron.bias = self.extractor()
+            neuron.bias = self.extractor(num_prev_inputs)
             for _ in range(num_prev_inputs):
-                neuron.weights.append(self.extractor())
+                neuron.weights.append(self.extractor(num_prev_inputs))
 
     def __repr__(self):
         result = []

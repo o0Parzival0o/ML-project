@@ -33,7 +33,7 @@
         "method": "hold_out"
   },
   "initialization": {
-      "method": "random"
+      "method": "fan_in"
   },
   "paths": {
       "train_data": "../../MONK files/monks-1.train",

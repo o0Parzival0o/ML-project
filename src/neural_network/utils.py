@@ -16,8 +16,23 @@ def load_config_json(filepath):
 #can choose between different extraction methods for the weights/biases
 def create_random_extractor(method):
     if(method == "random"):
-        def extractor_function():
+        def extractor_function(fan_in=None):
             return random.uniform(-0.7,0.7)
+        return extractor_function
+    elif(method == "fan_in"):   # Micheli (Slide NN-part2 n.12) 
+        def extractor_function(fan_in):
+            bound = 2.0 / fan_in
+            return random.uniform(-bound, bound)
+        return extractor_function
+    elif(method == "xavier"):   # sigmoid/tanh
+        def extractor_function(fan_in):
+            bound = np.sqrt(3.0 / fan_in)
+            return random.uniform(-bound, bound)
+        return extractor_function
+    elif(method == "he"):   # ReLu
+        def extractor_function(fan_in):
+            bound = np.sqrt(6.0 / fan_in)
+            return random.uniform(-bound, bound)
         return extractor_function
     else:
         raise ValueError("Invalid method.")

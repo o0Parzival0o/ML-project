@@ -4,7 +4,7 @@
       "neurons_per_layer": [3]
   },
   "functions": {
-      "hidden": "relu",
+      "hidden": "tanh",
       "output": "sigmoid",
       "loss": "binary_crossentropy"
   },
@@ -31,7 +31,7 @@
     "method": "hold_out"
   },
   "initialization": {
-      "method": "random"
+      "method": "xavier"
   },
   "paths": {
       "train_data": "../../MONK files/monks-1.train",
