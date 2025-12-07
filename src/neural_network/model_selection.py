@@ -183,8 +183,8 @@ def random_search(training_sets, input_units, config):
     return final_nn, best_config
         # nn.plot_metrics(fig_loss=fig_loss, fig_acc=fig_acc, rows=n_rows, cols=n_cols, plot_index=i, changing_hyperpar=changing_hyperpar[i])
 
-    print(f"The best combination is:\n{trials[best_vl_loss[1]]}\n\nwith a vl loss of {best_vl_loss[0]}\n\n\n")
-    #TODO ricordarsi di rifare training del modello con parametri ottimi dopo la vl
+    # print(f"The best combination is:\n{trials[best_vl_loss[1]]}\n\nwith a vl loss of {best_vl_loss[0]}\n\n\n")
+
 
 def launch_trial(comb, training_sets, input_units, verbose=True):
     if verbose:
@@ -272,7 +272,6 @@ def evaluate_configuration(trial_config, training_sets, input_units):
         
         total_loss = 0
         
-        # print(f"  Running {k_folds}-Fold CV...")
         
         for i in range(k_folds):
             val_start, val_end = indices[i]
