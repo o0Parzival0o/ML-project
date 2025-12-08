@@ -5,7 +5,9 @@
   },
   "functions": {
       "hidden": "relu",
+      "hidden_param": 0.0,
       "output": "linear",
+      "output_param": 1.0,
       "loss": "MEE"
   },
   "training": {

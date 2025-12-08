@@ -1,0 +1,4 @@
+xavier/he	https://doi.org/10.48550/arXiv.2004.06632
+
+pca		https://doi.org/10.48550/arXiv.1404.1100
+		https://doi.org/10.48550/arXiv.2501.19114

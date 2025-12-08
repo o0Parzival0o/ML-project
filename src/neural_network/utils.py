@@ -14,26 +14,27 @@ def load_config_json(filepath):
     return config
 
 #can choose between different extraction methods for the weights/biases
-def create_random_extractor(method):
+def create_extractor(method):
+    range = 1.4
     if(method == "random"):
-        def extractor_function(fan_in=None):
-            return random.uniform(-0.7,0.7)
-        return extractor_function
+        def random_extractor(fan_in=None, fan_out=None, a=None):
+            return random.uniform(-range/2, range/2)
+        return random_extractor
     elif(method == "fan_in"):   # Micheli (Slide NN-part2 n.12) 
-        def extractor_function(fan_in):
-            bound = 2.0 / fan_in
+        def fanin_extractor(fan_in=None, fan_out=None, a=None):
+            bound = range * 2. / fan_in
             return random.uniform(-bound, bound)
-        return extractor_function
+        return fanin_extractor
     elif(method == "xavier"):   # sigmoid/tanh
-        def extractor_function(fan_in):
-            bound = np.sqrt(3.0 / fan_in)
+        def xavier_extractor(fan_in=None, fan_out=None, a=None):
+            bound = np.sqrt(6. / (fan_in - fan_out))
             return random.uniform(-bound, bound)
-        return extractor_function
+        return xavier_extractor
     elif(method == "he"):   # ReLu
-        def extractor_function(fan_in):
-            bound = np.sqrt(6.0 / fan_in)
-            return random.uniform(-bound, bound)
-        return extractor_function
+        def he_extractor(fan_in=None, fan_out=None, a=None):
+            bound = np.sqrt(6. / (fan_in * (1 + a**2)))
+            return random.gauss(-bound, bound)
+        return he_extractor
     else:
         raise ValueError("Invalid method.")
     
@@ -178,7 +179,20 @@ def plot_correlation(X, T):
     
     return corr_features, corr_feat_target
 
-
+def get_k_fold_indices(n_samples, k_folds):
+    folds_size = int(np.floor(n_samples / k_folds))
+    folds_remainder = n_samples % k_folds
+    
+    folds_indexes = []
+    start_index = 0
+    
+    for i in range(k_folds):
+        current_fold_size = folds_size + (1 if i < folds_remainder else 0)
+        current_end = start_index + current_fold_size
+        folds_indexes.append((start_index, current_end))
+        start_index = current_end
+        
+    return folds_indexes
 
 
 #=============================

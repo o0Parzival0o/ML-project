@@ -36,12 +36,14 @@ class NeuronLayer:
 
 class NeuralNetwork:
     """ Represents a multi-layer perceptron neural network. """
-    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar, extractor, activation=["relu", "sigmoid"], early_stopping=[False]):
+    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar, extractor, activation=[["relu", 0.], ["sigmoid", 1.]], early_stopping=[False]):
         self.extractor = extractor
-        self.hidden_activation = actfun.activation_functions[activation[0]][0]
-        self.d_hidden_activation = actfun.activation_functions[activation[0]][1]
-        self.output_activation = actfun.activation_functions[activation[1]][0]
-        self.d_output_activation = actfun.activation_functions[activation[1]][1]
+        self.hidden_activation = actfun.activation_functions[activation[0][0]][0]
+        self.d_hidden_activation = actfun.activation_functions[activation[0][0]][1]
+        self.hidden_activation_param = activation[0][1]
+        self.output_activation = actfun.activation_functions[activation[1][0]][0]
+        self.d_output_activation = actfun.activation_functions[activation[1][0]][1]
+        self.output_activation_param = activation[1][1]
 
         self.num_inputs = num_inputs
         self.neurons_per_layer = neurons_per_layer                      #neurons per HIDDEN layer
@@ -60,7 +62,7 @@ class NeuralNetwork:
             num_inputs = self.num_inputs if i == 0 else self.neurons_per_layer[i-1]
 
             hidden_layer = NeuronLayer(num_neurons)
-            self.init_weights(hidden_layer, num_inputs)
+            self.init_weights(hidden_layer, num_inputs, self.neurons_per_layer[i])
             self.hidden_layers.append(hidden_layer)
 
             hidden_layer.weights = np.array([neuron.weights for neuron in hidden_layer.neurons])
@@ -68,7 +70,7 @@ class NeuralNetwork:
 
         # initialize output neuron and weights
         self.output_layer = NeuronLayer(num_outputs)
-        self.init_weights(self.output_layer, self.hidden_layers[-1].num_neurons)
+        self.init_weights(self.output_layer, self.hidden_layers[-1].num_neurons, num_outputs)
 
         self.output_layer.weights = np.array([neuron.weights for neuron in self.output_layer.neurons])
         self.output_layer.biases = np.array([neuron.bias for neuron in self.output_layer.neurons])
@@ -95,11 +97,11 @@ class NeuralNetwork:
         self.ts_loss = None
         self.ts_accuracy = None
 
-    def init_weights(self, layer, num_prev_inputs):
+    def init_weights(self, layer, num_inputs, num_outputs):
         for neuron in layer.neurons:
-            neuron.bias = self.extractor(num_prev_inputs)
-            for _ in range(num_prev_inputs):
-                neuron.weights.append(self.extractor(num_prev_inputs))
+            neuron.bias = self.extractor(fan_in=num_inputs, fan_out=num_outputs, a=(self.output_activation_param if layer == self.output_layer else self.hidden_activation_param))
+            for _ in range(num_inputs):
+                neuron.weights.append(self.extractor(fan_in=num_inputs, fan_out=num_outputs, a=(self.output_activation_param if layer == self.output_layer else self.hidden_activation_param)))
 
     def __repr__(self):
         result = []
@@ -125,13 +127,13 @@ class NeuralNetwork:
         for layer in self.hidden_layers:
             layer.inputs = current_inputs
             layer.net = layer.weights @ layer.inputs + layer.biases
-            layer.outputs = self.hidden_activation(layer.net)
+            layer.outputs = self.hidden_activation(layer.net, self.hidden_activation_param)
             current_inputs = layer.outputs
 
         # output layer
         self.output_layer.inputs = current_inputs
         self.output_layer.net = self.output_layer.weights @ self.output_layer.inputs + self.output_layer.biases
-        self.output_layer.outputs = self.output_activation(self.output_layer.net)
+        self.output_layer.outputs = self.output_activation(self.output_layer.net, self.output_activation_param)
 
         return self.output_layer.outputs
 
@@ -141,10 +143,10 @@ class NeuralNetwork:
         for layer in reversed(self.layers):
             # output layer
             if layer == self.output_layer:
-                layer.bp_deltas = (target - layer.outputs) * self.d_output_activation(layer.net)                       # delta_k
+                layer.bp_deltas = (target - layer.outputs) * self.d_output_activation(layer.net, self.output_activation_param)                       # delta_k
             # hidden layers
             elif layer in self.hidden_layers:
-                layer.bp_deltas = (previous_weights.T @ previous_delta) * self.d_hidden_activation(layer.net)          # delta_j
+                layer.bp_deltas = (previous_weights.T @ previous_delta) * self.d_hidden_activation(layer.net, self.hidden_activation_param)          # delta_j
             else:
                 raise Exception("Layer not recognized")
             

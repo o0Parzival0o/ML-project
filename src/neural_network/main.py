@@ -37,15 +37,17 @@ if __name__ == "__main__":
             train_args = config["training"]
 
             hidden_act_func = config["functions"]["hidden"]
+            hidden_act_param = config["functions"]["hidden_param"]
             output_act_func = config["functions"]["output"]
-            act_func = [hidden_act_func, output_act_func]
+            output_act_param = config["functions"]["output_param"]
+            act_func = [[hidden_act_func, hidden_act_param], [output_act_func, output_act_param]]
             
             training_hyperpar = config["training"]
             early_stopping = config["training"]["early_stopping"]
 
             loss_func = config["functions"]["loss"]
 
-            extractor = utils.create_random_extractor(config["initialization"]["method"])
+            extractor = utils.create_extractor(config["initialization"]["method"])
 
             nn = NeuralNetwork(num_inputs=input_units,
                             num_outputs=config["architecture"]["output_units"],

@@ -1,31 +1,31 @@
 import numpy as np
 
-def linear(x):
-    return x
+def linear(x, a=1.):
+    return a*x
 
-def d_linear(x):
-    return 1
+def d_linear(x, a=1.):
+    return a
 
-def sigmoid(x, a=1):
-    return 1 / (1 + np.exp(-x*a))
+def sigmoid(x, a=1.):
+    return 1. / (1. + np.exp(-x*a))
 
-def d_sigmoid(x):
-    return sigmoid(x) * (1 - sigmoid(x))
+def d_sigmoid(x, a=1.):
+    return a * sigmoid(x) * (1. - sigmoid(x))
 
-def tanh(x, a=1):
+def tanh(x, a=1.):
     return np.tanh(x*a)
 
-def d_tanh(x):
-    return 1 - np.tanh(x)**2
+def d_tanh(x, a=1.):
+    return a * (1. - np.tanh(x)**2.)
 
-def relu(x):
-    return np.maximum(0, x)
+def relu(x, a=0.):
+    return np.maximum(0., x) + (np.minimum(0., a*x) if a != 0. else 0.)
 
-def d_relu(x):
-    return np.where(x > 0, 1.0, 0.0)
+def d_relu(x, a=0.):
+    return np.where(x > 0., 1., a)
 
 def softplus(x):
-    return np.log1p(np.exp(-np.abs(x))) + np.maximum(x, 0)
+    return np.log1p(np.exp(-np.abs(x))) + np.maximum(x, 0.)
 
 def d_softplus(x):
     return sigmoid(x)

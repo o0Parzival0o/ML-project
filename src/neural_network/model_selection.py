@@ -1,9 +1,7 @@
 import utils
-import activations as actfun
 import losses
 import itertools
 from model import NeuralNetwork
-import math
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -44,35 +42,41 @@ def grid_search(training_sets, input_units, config):
         trial_changing = {k: trial[k] for k in changing_keys}
         changing_hyperpar.append(trial_changing)
 
-    num_trials = len(trials)
-    n_cols = int(np.ceil(np.sqrt(num_trials)))
-    n_rows = int(np.ceil(num_trials / n_cols))
+    # num_trials = len(trials)
+    # n_cols = int(np.round(np.sqrt(num_trials)))
+    # n_rows = int(np.round(num_trials / n_cols))
     
-    fig_loss = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
-    fig_acc = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
+    # fig_loss = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
+    # fig_acc = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
 
+    # run all the possible trial
     best_vl_loss = None
-    best_trial_idx = -1
-    networks_tried = []
+    best_trial_idx = None
+    # networks_tried = []
     for i, trial in enumerate(trials):
-        print(f"\n--- Trial {i+1}/{len(trials)} ---")
+        print(f"Trial {i+1}/{len(trials)} :\n")
 
         loss = evaluate_configuration(trial, training_sets, input_units)
 
         if best_vl_loss is None or loss < best_vl_loss:
             best_vl_loss = loss
             best_trial_idx = i
-            print(f"New best found! Loss: {best_vl_loss:.6f}")
+            print(f"New best loss: {best_vl_loss:.6f}\n")
 
     best_config = trials[best_trial_idx]
 
+    # retrain on model with the best loss
     X_full = np.concatenate((training_sets[0], training_sets[1]))
     T_full = np.concatenate((training_sets[2], training_sets[3]))
 
-    final_loss, final_nn = launch_trial(best_config, [X_full, X_full, T_full, T_full], input_units, verbose=True)
+    _, final_nn = launch_trial(best_config, [X_full, X_full, T_full, T_full], input_units, verbose=True)
 
+    fig_loss = plt.figure(figsize=(5, 4))
+    fig_acc = plt.figure(figsize=(5, 4))
+    final_nn.plot_metrics(fig_loss=fig_loss, fig_acc=fig_acc)
 
     return final_nn, best_config
+
         # loss, nn = launch_trial(trial, training_sets, input_units)
         # networks_tried.append((loss, nn))
         
@@ -153,17 +157,18 @@ def random_search(training_sets, input_units, config):
         trial_changing = {k: trial[k] for k in changing_keys}
         changing_hyperpar.append(trial_changing)
 
-    n_cols = int(np.ceil(np.sqrt(num_trials)))
-    n_rows = int(np.ceil(num_trials / n_cols))
+    # n_cols = int(np.round(np.sqrt(num_trials)))
+    # n_rows = int(np.round(num_trials / n_cols))
     
-    fig_loss = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
-    fig_acc = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
+    # fig_loss = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
+    # fig_acc = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
 
+    # run all the possible trial
     best_vl_loss = None
-    best_trial_idx = -1
-    networks_tried = []
+    best_trial_idx = None
+    # networks_tried = []
     for i, trial in enumerate(trials):
-        print(f"\n--- Trial {i+1}/{len(trials)} ---")
+        print(f"Trial {i+1}/{len(trials)} :\n")
 
         loss = evaluate_configuration(trial, training_sets, input_units)
 
@@ -174,38 +179,45 @@ def random_search(training_sets, input_units, config):
 
     best_config = trials[best_trial_idx]
 
+    # retrain on model with the best loss
     X_full = np.concatenate((training_sets[0], training_sets[1]))
     T_full = np.concatenate((training_sets[2], training_sets[3]))
 
-    final_loss, final_nn = launch_trial(best_config, [X_full, X_full, T_full, T_full], input_units, verbose=True)
+    _, final_nn = launch_trial(best_config, [X_full, X_full, T_full, T_full], input_units, verbose=True)
 
+    fig_loss = plt.figure(figsize=(5, 4))
+    fig_acc = plt.figure(figsize=(5, 4))
+    final_nn.plot_metrics(fig_loss=fig_loss, fig_acc=fig_acc)
 
     return final_nn, best_config
-        # nn.plot_metrics(fig_loss=fig_loss, fig_acc=fig_acc, rows=n_rows, cols=n_cols, plot_index=i, changing_hyperpar=changing_hyperpar[i])
+
+    # nn.plot_metrics(fig_loss=fig_loss, fig_acc=fig_acc, rows=n_rows, cols=n_cols, plot_index=i, changing_hyperpar=changing_hyperpar[i])
 
     # print(f"The best combination is:\n{trials[best_vl_loss[1]]}\n\nwith a vl loss of {best_vl_loss[0]}\n\n\n")
 
 
-def launch_trial(comb, training_sets, input_units, verbose=True):
+def launch_trial(conf, training_sets, input_units, verbose=True):
     if verbose:
-        print(f"Parameters:\n{comb}\n")
+        print(f"Parameters:\n{conf}\n")
 
     X_train, X_val, T_train, T_val = training_sets
 
-    output_units = comb["architecture"]["output_units"]
-    neurons_per_layer = comb["architecture"]["neurons_per_layer"]
-    hidden_act_func = comb["functions"]["hidden"]
-    output_act_func = comb["functions"]["output"]
-    act_func = [hidden_act_func, output_act_func]   
+    output_units = conf["architecture"]["output_units"]
+    neurons_per_layer = conf["architecture"]["neurons_per_layer"]
+    hidden_act_func = conf["functions"]["hidden"]
+    hidden_act_param = conf["functions"]["hidden_param"]
+    output_act_func = conf["functions"]["output"]
+    output_act_param = conf["functions"]["output_param"]
+    act_func = [[hidden_act_func, hidden_act_param], [output_act_func, output_act_param]]   
 
-    train_args = comb["training"]
-    training_hyperpar = comb["training"]
+    train_args = conf["training"]
+    training_hyperpar = conf["training"]
 
-    early_stopping = comb["training"]["early_stopping"]
+    early_stopping = conf["training"]["early_stopping"]
 
-    loss_func = comb["functions"]["loss"]
+    loss_func = conf["functions"]["loss"]
 
-    extractor = utils.create_random_extractor(comb["initialization"]["method"])
+    extractor = utils.create_extractor(conf["initialization"]["method"])
 
     nn = NeuralNetwork(num_inputs=input_units,
                        num_outputs=output_units,
@@ -233,22 +245,7 @@ def perform_search(training_sets, input_units, config):
         return random_search(training_sets, input_units, config)
     else:
         raise ValueError('"search_type" must be "grid" or "random"')
-        
-
-def get_k_fold_indices(n_samples, k_folds):
-    folds_size = math.floor(n_samples / k_folds)
-    folds_remainder = n_samples % k_folds
-    
-    folds_indexes = []
-    start_index = 0
-    
-    for i in range(k_folds):
-        current_fold_size = folds_size + (1 if i < folds_remainder else 0)
-        current_end = start_index + current_fold_size
-        folds_indexes.append((start_index, current_end))
-        start_index = current_end
-        
-    return folds_indexes
+ 
 
 def evaluate_configuration(trial_config, training_sets, input_units):
     """
@@ -258,7 +255,7 @@ def evaluate_configuration(trial_config, training_sets, input_units):
     vl_method = trial_config["validation"]["method"]
 
     if vl_method == "hold_out":
-        loss, nn = launch_trial(trial_config, training_sets, input_units, verbose=False)
+        loss, _ = launch_trial(trial_config, training_sets, input_units, verbose=False)
         return loss
 
     elif vl_method == "k_fold_cv":
@@ -268,19 +265,17 @@ def evaluate_configuration(trial_config, training_sets, input_units):
         X_full = np.concatenate((training_sets[0], training_sets[1]))
         T_full = np.concatenate((training_sets[2], training_sets[3]))
         
-        indices = get_k_fold_indices(len(X_full), k_folds)
+        indices = utils.get_k_fold_indices(len(X_full), k_folds)
         
         total_loss = 0
-        
-        
+
+        # run over k folds  
         for i in range(k_folds):
             val_start, val_end = indices[i]
             
-
             X_val_k = X_full[val_start:val_end]
             T_val_k = T_full[val_start:val_end]
             
-
             X_train_k = np.concatenate([X_full[:val_start], X_full[val_end:]])
             T_train_k = np.concatenate([T_full[:val_start], T_full[val_end:]])
             
@@ -290,7 +285,7 @@ def evaluate_configuration(trial_config, training_sets, input_units):
             total_loss += loss
             
         avg_loss = total_loss / k_folds
-        print(f"  > Average {k_folds}-Fold Loss: {avg_loss:.6f}")
+        print(f"Average {k_folds}-fold loss: {avg_loss:.6f}\n")
         return avg_loss
 
     else:
