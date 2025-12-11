@@ -1,7 +1,7 @@
 import utils
 from model import NeuralNetwork
 from data_loader import data_loader
-from model_selection import perform_search
+from model_selection import model_assessment
 
 import matplotlib.pyplot as plt
 
@@ -26,13 +26,13 @@ if __name__ == "__main__":
         monk_test_data = config["paths"]["test_data"]
         X_train, T_train, input_units = data_loader(monk_train_data, data_type="MONK", shuffle=True)       
         X_test, T_test, _ = data_loader(monk_test_data, data_type="MONK", shuffle=False)
-        
-        data_split_prop = [config["training"]["splitting"]["tr"], config["training"]["splitting"]["vl"]]
-        X_train, X_val, T_train, T_val = utils.data_splitting(X_train, T_train, data_split_prop)
 
-        training_sets = [X_train, X_val, T_train, T_val]
+        training_sets = [X_train, T_train]
 
         if single_trial:
+
+            data_split_prop = [config["training"]["splitting"]["tr"], config["training"]["splitting"]["vl"]]
+            X_train, X_val, T_train, T_val = utils.data_splitting(X_train, T_train, data_split_prop)
 
             train_args = config["training"]
 
@@ -65,7 +65,7 @@ if __name__ == "__main__":
             # nn.plot_metrics(fig1, fig2)
 
         else:
-            perform_search(training_sets, input_units, config)
+            model_assessment(training_sets, input_units, config)
 
 
     else:
@@ -87,12 +87,12 @@ if __name__ == "__main__":
 
         # utils.plot_correlation(X_train, T_train)
 
-        data_split_prop = [config["training"]["splitting"]["tr"], config["training"]["splitting"]["vl"], config["training"]["splitting"]["ts"]]
-        X_train, X_val, X_test, T_train, T_val, T_test = utils.data_splitting(X_train, T_train, data_split_prop)
-
-        training_sets = [X_train, X_val, T_train, T_val]
+        training_sets = [X_train, T_train]
 
         if single_trial:
+
+            data_split_prop = [config["training"]["splitting"]["tr"], config["training"]["splitting"]["vl"], config["training"]["splitting"]["ts"]]
+            X_train, X_val, X_test, T_train, T_val, T_test = utils.data_splitting(X_train, T_train, data_split_prop)
 
             train_args = config["training"]
 
@@ -123,7 +123,7 @@ if __name__ == "__main__":
             # nn.plot_metrics(fig1, fig2)
         
         else:
-            perform_search(training_sets, input_units, config)
+            model_assessment(training_sets, input_units, config)
 
 
     end = time.time() - start

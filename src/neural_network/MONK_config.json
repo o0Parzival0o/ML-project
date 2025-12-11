@@ -26,7 +26,8 @@
       },
       "splitting": {
           "tr": 0.75,
-          "vl": 0.25
+          "vl": 0.25,
+          "ts": 0.00
       }
   },
   "validation": {
