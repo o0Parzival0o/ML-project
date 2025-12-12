@@ -13,7 +13,6 @@ def model_assessment(training_set, input_units, config):
     X_training = training_set[0]
     T_training = training_set[1]
     method_assessment = config["assessment"]["method"]
-    search_type = config["training"]["search_type"]
     
     if method_assessment not in ["hold_out", "k_fold_cv", "leave_one_out_cv"]:
         raise ValueError(f"Unknown assessment method: {method_assessment}")
@@ -25,22 +24,28 @@ def model_assessment(training_set, input_units, config):
         train_set = [X_train, T_train]
         test_set = [X_test, T_test]
 
-        if search_type == "grid":
-            grid_search(X_train, T_train, input_units, config)
-        if search_type == "random":
-            random_search(X_train, T_train, input_units, config)
-        else:
-            raise ValueError('"search_type" must be "grid" or "random"')
-
-        risk, _ = hold_out(config, input_units, train_set, test_set)
+        risk, _ = hold_out(config, input_units, train_set, test_set, mod_type="assessment")
+        print(f"Test risk: {risk:.6f}")
         return risk
     
     else:
         num_folds = config["validation"]["folds"] if method_assessment == "k_fold_cv" else len(X_train)
 
-        avg_risk, std_risk = k_fold(num_folds, config, X_training, T_training, input_units)
-        print(f"Average {num_folds}-fold risk: {avg_risk:.6f} +- {std_risk:.6f}\n")
+        avg_risk, std_risk = k_fold(num_folds, config, input_units, [X_training, T_training], mod_type="assessment")
+        print(f"Average {num_folds}-fold test risk: {avg_risk:.6f} +- {std_risk:.6f}\n")
         return avg_risk
+    
+
+def perform_search(X_training, T_training, input_units, config):
+    search_type = config["training"]["search_type"]
+    if search_type == "grid":
+        nn = grid_search(X_training, T_training, input_units, config)
+        return nn
+    if search_type == "random":
+        nn = random_search(X_training, T_training, input_units, config)
+        return nn
+    else:
+        raise ValueError('"search_type" must be "grid" or "random"')
 
 
 def grid_search(X_training, T_training, input_units, config):
@@ -80,7 +85,7 @@ def grid_search(X_training, T_training, input_units, config):
     # run all the possible trial
     best_vl_loss = None
     best_trial_idx = None
-    losses = None
+    losses = []
     # networks_tried = []
     for i, trial in enumerate(trials):
         print(f"Trial {i+1}/{len(trials)} :\n")
@@ -97,7 +102,7 @@ def grid_search(X_training, T_training, input_units, config):
     best_config = trials[best_trial_idx]
 
     # retrain on model with the best loss
-    _, final_nn = launch_trial(best_config, [X_training, X_training, T_training, T_training], input_units, verbose=True)
+    _, final_nn = launch_trial(best_config, [X_training, T_training], [X_training, T_training], input_units, verbose=True)
 
     fig_loss = plt.figure(figsize=(5, 4))
     fig_acc = plt.figure(figsize=(5, 4))
@@ -105,7 +110,7 @@ def grid_search(X_training, T_training, input_units, config):
 
     return final_nn, best_config
 
-def random_search(X_train, T_train, input_units, config):
+def random_search(X_training, T_training, input_units, config):
 
     flattened_values = utils.flatten_config(config)
 
@@ -182,7 +187,7 @@ def random_search(X_train, T_train, input_units, config):
     for i, trial in enumerate(trials):
         print(f"Trial {i+1}/{len(trials)} :\n")
 
-        loss = model_selection(trial, X_train, T_train, input_units)
+        loss = model_selection(trial, X_training, T_training, input_units)
 
         if best_vl_loss is None or loss < best_vl_loss:
             best_vl_loss = loss
@@ -192,7 +197,7 @@ def random_search(X_train, T_train, input_units, config):
     best_config = trials[best_trial_idx]
 
     # retrain on model with the best loss
-    _, final_nn = launch_trial(best_config, [X_train, T_train], [None, None], input_units, verbose=True)
+    _, final_nn = launch_trial(best_config, [X_training, T_training], [X_training, T_training], input_units, verbose=True)
 
     fig_loss = plt.figure(figsize=(5, 4))
     fig_acc = plt.figure(figsize=(5, 4))
@@ -261,105 +266,64 @@ def model_selection(trial_config, X_train, T_train, input_units):
         train_set = [X_train, T_train]
         val_set = [X_val, T_val]
 
-        loss, _ = hold_out(trial_config, input_units, train_set, val_set)
+        loss = hold_out(trial_config, input_units, train_set, val_set)
         return loss
 
     else:
         num_folds = trial_config["validation"]["folds"] if method_selection == "k_fold_cv" else len(X_train)
 
-        avg_loss, std_loss = k_fold(num_folds, trial_config, X_train, T_train, input_units)
+        avg_loss, std_loss = k_fold(num_folds, trial_config, input_units, [X_train, T_train])
         print(f"Average {num_folds}-fold loss: {avg_loss:.6f} +- {std_loss:.6f}\n")
         return avg_loss
     
+def evaluate_model(nn : NeuralNetwork, test_set, loss_func):
+    X_test = test_set[0]
+    T_test = test_set[1]
+    predictions = np.array([nn.feed_forward(x) for x in X_test])
+    risk = nn.loss_calculator(X_test, T_test, loss_func)
+    return risk, predictions
 
+def hold_out(config, input_units, train_set, val_test_set, mod_type=None):
 
-def hold_out(config, input_units, train_set, val_set):
+    if mod_type == "assessment":
+        loss_func = losses.losses_functions[config["functions"]["loss"]]
+        nn, _ = perform_search(train_set[0], train_set[1], input_units, config)
+        risk, _ = evaluate_model(nn, val_test_set, loss_func)
+        return risk
 
-    loss, _ = launch_trial(config, train_set, val_set, input_units, verbose=False)
-    return loss
+    else:
+        loss, _ = launch_trial(config, train_set, val_test_set, input_units, verbose=False)
+        return loss
 
-def k_fold(k, config, input_units, X_training, T_training):
+def k_fold(k, config, input_units, train_set, mod_type=None):
 
     k_folds = k
-    indices = utils.get_k_fold_indices(len(X_training), k_folds)
+    indices = utils.get_k_fold_indices(len(train_set[0]), k_folds)
 
-    total_loss = []
+    total_loss_risk = []
     # run over k folds  
     for i in range(k_folds):
-        val_start, val_end = indices[i]
+        val_test_start, val_test_end = indices[i]
         
-        X_val_k = X_training[val_start:val_end]
-        T_val_k = T_training[val_start:val_end]
+        X_val_test_k = train_set[0][val_test_start:val_test_end]
+        T_val_test_k = train_set[1][val_test_start:val_test_end]
         
-        X_train_k = np.concatenate([X_training[:val_start], X_training[val_end:]])
-        T_train_k = np.concatenate([T_training[:val_start], T_training[val_end:]])
+        X_train_k = np.concatenate([train_set[0][:val_test_start], train_set[0][val_test_end:]])
+        T_train_k = np.concatenate([train_set[1][:val_test_start], train_set[1][val_test_end:]])
         
         current_train_set = [X_train_k, T_train_k]
-        current_val_set = [X_val_k, T_val_k]
+        current_val_test_set = [X_val_test_k, T_val_test_k]
+
+        if mod_type == "assessment":
+            loss_func = losses.losses_functions[config["functions"]["loss"]]
+            nn, _ = perform_search(current_train_set[0], current_train_set[1], input_units, config)
+            loss_risk, _ = evaluate_model(nn, current_val_test_set, loss_func)
+
+        else:
+            loss_risk = launch_trial(config, current_train_set, current_val_test_set, input_units, verbose=False)
+
+        total_loss_risk.append(loss_risk)
         
-        loss, _ = launch_trial(config, current_train_set, current_val_set, input_units, verbose=False)
-        total_loss.append(loss)
-        
-    avg_loss = np.mean(total_loss)
-    std_loss = np.std(total_loss)
+    avg_loss = np.mean(total_loss_risk)
+    std_loss = np.std(total_loss_risk)
     return avg_loss, std_loss
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# data_split_prop = [trial_config["training"]["splitting"]["tr"], trial_config["training"]["splitting"]["vl"]]
-#         X_train, X_val, T_train, T_val = utils.data_splitting(X_training, T_training, data_split_prop)
-#         train_set = [X_train, T_train]
-#         val_set = [X_val, T_val]
-
-#         loss, _ = launch_trial(trial_config, train_set, val_set, input_units, verbose=False)
-
-
-
-
-
-
-
-# k_folds = trial_config["validation"]["folds"] if method_selection == "k_fold_cv" else len(X_training)
-        
-#         indices = utils.get_k_fold_indices(len(X_training), k_folds)
-        
-#         total_loss = []
-
-#         # run over k folds  
-#         for i in range(k_folds):
-#             val_start, val_end = indices[i]
-            
-#             X_val_k = X_training[val_start:val_end]
-#             T_val_k = T_training[val_start:val_end]
-            
-#             X_train_k = np.concatenate([X_training[:val_start], X_training[val_end:]])
-#             T_train_k = np.concatenate([T_training[:val_start], T_training[val_end:]])
-            
-#             current_train_set = [X_train_k, T_train_k]
-#             current_validation_set = [X_val_k, T_val_k]
-            
-#             loss, _ = launch_trial(trial_config, current_train_set, current_validation_set, input_units, verbose=False)
-#             total_loss.append(loss)
-            
-#         avg_loss = np.mean(total_loss)
-#         std_loss = np.std(total_loss)

@@ -129,7 +129,7 @@ if __name__ == "__main__":
     end = time.time() - start
     print(f"Elapsed time: {end} s")
 
-        
+
     # T_CUP = utils.inverse_standardization(T_CUP)
 
     #print(nn)

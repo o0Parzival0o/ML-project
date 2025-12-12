@@ -160,8 +160,8 @@ class NeuralNetwork:
                 delta_biases = self.learning_rate * layer.bp_deltas + self.momentum * layer.delta_biases_old
                                 
             else:
-                delta_weights = self.learning_rate * layer.weights_grad_acc + self.momentum * layer.delta_weights_old
-                delta_biases = self.learning_rate * layer.biases_grad_acc + self.momentum * layer.delta_biases_old
+                delta_weights = self.learning_rate * (layer.weights_grad_acc / l) + self.momentum * layer.delta_weights_old
+                delta_biases = self.learning_rate * (layer.biases_grad_acc / l) + self.momentum * layer.delta_biases_old
             
             layer.weights = layer.weights + delta_weights - self.regularization * layer.weights
             layer.biases = layer.biases + delta_biases - self.regularization * layer.biases
@@ -192,7 +192,8 @@ class NeuralNetwork:
         tr_accuracy.append(self.accuracy_calculator(X_tr, T_tr))
 
         if early_stopping_cond and monitor == "val_loss":
-            vl_loss.append(self.loss_calculator(X_vl, T_vl, loss_func))  
+            vl_loss.append(self.loss_calculator(X_vl, T_vl, loss_func)) 
+            vl_accuracy.append(self.accuracy_calculator(X_vl, T_vl)) 
         
         current_epoch = 0
         patience_index = patience
@@ -288,11 +289,11 @@ class NeuralNetwork:
                 rel_epsilon1 = 0.0005
                 rel_epsilon2 = 0.002
 
-                if current_vl_accuracy <= np.max(vl_accuracy[:-1]) * (1 - rel_epsilon1):
+                if current_vl_accuracy >= np.max(vl_accuracy[:-1]) * (1 - rel_epsilon1):
                     patience_index = patience
                     best_model_weights = copy.deepcopy(self.layers)                     ###########
 
-                elif current_vl_accuracy > np.max(vl_accuracy[:-1]) * (1 + rel_epsilon2):
+                elif current_vl_accuracy < np.max(vl_accuracy[:-1]) * (1 + rel_epsilon2):
                     patience_index -= 1
                 
                 else:
