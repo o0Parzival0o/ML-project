@@ -12,10 +12,10 @@ def MEE(o, t):
 
 def binary_crossentropy(o, t):
     t = t.astype(float)
-    eps = 1e-8
-    for k in o:
-        k = k + (-eps if k == 1. else eps if k == 0. else 0.)
-    bce = - (t * np.log(o) + (1 - t) * np.log(1 - o))
+    eps = 1e-15
+    o_clip = np.clip(o,eps,1-eps)
+
+    bce = - (t * np.log(o_clip) + (1 - t) * np.log(1 - o_clip))
     return np.mean(bce)
 
 losses_functions = {
