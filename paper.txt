@@ -2,3 +2,4 @@ xavier/he	https://doi.org/10.48550/arXiv.2004.06632
 
 pca		https://doi.org/10.48550/arXiv.1404.1100
 		https://doi.org/10.48550/arXiv.2501.19114
+gradient clip https://proceedings.mlr.press/v28/pascanu13.pdf libro scaricabile qui: https://github.com/janishar/mit-deep-learning-book-pdf/blob/master/complete-book-bookmarked-pdf/deeplearningbook.pdf
