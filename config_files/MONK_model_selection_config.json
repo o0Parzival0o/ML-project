@@ -17,6 +17,7 @@
       "learning_rate": [0.001, 0.1],
       "momentum": [0.75, 0.95],
       "regularization": [0.01, 0.000001],
+      "decay_factor": 0.0001,
       "batch": {
           "batch_size": "full",
           "drop_last": true

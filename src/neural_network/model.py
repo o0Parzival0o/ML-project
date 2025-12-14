@@ -83,8 +83,11 @@ class NeuralNetwork:
         
 
         self.learning_rate = training_hyperpar["learning_rate"]
+        self.min_learning_rate = training_hyperpar["learning_rate"]/100
+        self.orig_learning_rate = training_hyperpar["learning_rate"]
         self.momentum = training_hyperpar["momentum"]
         self.regularization = training_hyperpar["regularization"]
+        self.decay_factor = training_hyperpar["decay_factor"]
 
         self.early_stopping = early_stopping["enabled"]
         self.early_stopping_patience = early_stopping["patience"]
@@ -96,6 +99,8 @@ class NeuralNetwork:
         self.vl_accuracy = None
         self.ts_loss = None
         self.ts_accuracy = None
+
+        self.total_iters = 0
 
     def init_weights(self, layer, num_inputs, num_outputs):
         for neuron in layer.neurons:
@@ -154,6 +159,9 @@ class NeuralNetwork:
 
 
     def weights_update(self, l):
+
+        self.total_iters += 1
+
         for layer in self.layers:
             if l == 1:
                 delta_weights = self.learning_rate * np.outer(layer.bp_deltas, layer.inputs) + self.momentum * layer.delta_weights_old
@@ -168,6 +176,7 @@ class NeuralNetwork:
             
             layer.delta_weights_old = delta_weights
             layer.delta_biases_old = delta_biases
+            self.learning_rate = self.orig_learning_rate / (1+self.decay_factor*self.total_iters) if self.learning_rate > self.min_learning_rate else self.learning_rate
 
 
     def train(self, X_tr, T_tr, X_vl=None, T_vl=None, train_args=None, loss_func=None, early_stopping = None):
@@ -195,6 +204,7 @@ class NeuralNetwork:
             vl_loss.append(self.loss_calculator(X_vl, T_vl, loss_func)) 
             vl_accuracy.append(self.accuracy_calculator(X_vl, T_vl)) 
         
+        self.total_iters = 0
         current_epoch = 0
         patience_index = patience
         while current_epoch < max_epochs and (patience_index > 0 if early_stopping_cond else True):
