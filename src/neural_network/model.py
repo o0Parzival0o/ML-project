@@ -36,7 +36,7 @@ class NeuronLayer:
 
 class NeuralNetwork:
     """ Represents a multi-layer perceptron neural network. """
-    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar, extractor, activation=[["relu", 0.], ["sigmoid", 1.]], early_stopping=[False]):
+    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar, extractor, activation=[["relu", 0.], ["sigmoid", 1.]]):
         self.extractor = extractor
         self.hidden_activation = actfun.activation_functions[activation[0][0]][0]
         self.d_hidden_activation = actfun.activation_functions[activation[0][0]][1]
@@ -88,10 +88,6 @@ class NeuralNetwork:
         self.momentum = training_hyperpar["momentum"]
         self.regularization = training_hyperpar["regularization"]
         self.decay_factor = training_hyperpar["decay_factor"]
-
-        self.early_stopping = early_stopping["enabled"]
-        self.early_stopping_patience = early_stopping["patience"]
-        self.early_stopping_monitor = early_stopping["monitor"]
 
         self.tr_loss = None
         self.tr_accuracy = None
@@ -187,9 +183,11 @@ class NeuralNetwork:
 
         #Early stopping variables
         early_stopping_cond = early_stopping["enabled"]
-        patience = early_stopping["patience"]
-        best_model_weights = copy.deepcopy(self.layers)         #############
-        monitor = early_stopping["monitor"]
+        patience = early_stopping["patience"] if early_stopping_cond else None
+        monitor = early_stopping["monitor"] if early_stopping_cond else None
+
+        if X_vl is not None:
+            best_model_weights = copy.deepcopy(self.layers)
 
         loss_func = losses.losses_functions[loss_func]
         tr_loss = []
@@ -200,9 +198,9 @@ class NeuralNetwork:
         tr_loss.append(self.loss_calculator(X_tr, T_tr, loss_func))                 # loss 0: with random parameters
         tr_accuracy.append(self.accuracy_calculator(X_tr, T_tr))
 
-        if early_stopping_cond and monitor == "val_loss":
+        if X_vl is not None:
             vl_loss.append(self.loss_calculator(X_vl, T_vl, loss_func)) 
-            vl_accuracy.append(self.accuracy_calculator(X_vl, T_vl)) 
+            vl_accuracy.append(self.accuracy_calculator(X_vl, T_vl))
         
         self.total_iters = 0
         current_epoch = 0
@@ -271,13 +269,17 @@ class NeuralNetwork:
             else:
                 raise TypeError('batch_size is not positive int or "full".')
 
-            current_vl_loss = self.loss_calculator(X_vl, T_vl, loss_func)
-            vl_loss.append(current_vl_loss)
-            current_vl_accuracy = self.accuracy_calculator(X_vl, T_vl)
-            vl_accuracy.append(current_vl_accuracy)
+            if X_vl is not None:
+                current_vl_loss = self.loss_calculator(X_vl, T_vl, loss_func)
+                vl_loss.append(current_vl_loss)
+                current_vl_accuracy = self.accuracy_calculator(X_vl, T_vl)
+                vl_accuracy.append(current_vl_accuracy)
             
             #check if vl increases
-            if monitor == "val_loss":
+            if not early_stopping_cond:
+                pass
+
+            elif early_stopping_cond and monitor == "val_loss":
                 
                 # "sensibility" of early stopping
                 rel_epsilon1 = 0.001
@@ -293,7 +295,7 @@ class NeuralNetwork:
                 else:
                     pass
 
-            elif monitor == "val_accuracy":
+            elif early_stopping_cond and monitor == "val_accuracy":
 
                 # "sensibility" of early stopping
                 rel_epsilon1 = 0.0005
@@ -301,7 +303,7 @@ class NeuralNetwork:
 
                 if current_vl_accuracy >= np.max(vl_accuracy[:-1]) * (1 - rel_epsilon1):
                     patience_index = patience
-                    best_model_weights = copy.deepcopy(self.layers)                     ###########
+                    best_model_weights = copy.deepcopy(self.layers)
 
                 elif current_vl_accuracy < np.max(vl_accuracy[:-1]) * (1 + rel_epsilon2):
                     patience_index -= 1
@@ -311,7 +313,6 @@ class NeuralNetwork:
 
             else:
                 raise ValueError('monitor parameter must be "val_loss" or "val_accuracy"')
-            # print(f"validation loss in this run {loss}\n\n")
 
             tr_loss.append(self.loss_calculator(X_tr, T_tr, loss_func))
             tr_accuracy.append(self.accuracy_calculator(X_tr, T_tr))
@@ -319,15 +320,16 @@ class NeuralNetwork:
 
         print(f"Early stopping at epoch: {current_epoch}" if patience_index == 0 else "Max epoch reached")
 
-        self.layers = copy.deepcopy(best_model_weights)                             #############
+        if X_vl is not None:
+            self.layers = copy.deepcopy(best_model_weights)
 
         self.hidden_layers = self.layers[:-1]
         self.output_layer = self.layers[-1]
 
         self.tr_loss = tr_loss
-        self.vl_loss = vl_loss
-        if len(tr_accuracy) != 0:
-            self.tr_accuracy = tr_accuracy
+        self.tr_accuracy = tr_accuracy
+        if X_vl is not None:
+            self.vl_loss = vl_loss
             self.vl_accuracy = vl_accuracy
     
     def loss_calculator(self, X, T, loss_func):
@@ -372,10 +374,16 @@ class NeuralNetwork:
             if plot_index % cols == 0:
                 ax_loss.set_ylabel("Loss / Validation loss" if self.vl_loss else "Loss")
 
-            if title == "best_model":
-                ax_loss.set_title(f"Best model (VL: {self.vl_loss[-1]:.4f})", fontsize=8, fontweight='bold')
+            if self.vl_loss is not None:
+                if title == "best_model":
+                    ax_loss.set_title(f"Best model (VL: {self.vl_loss[-1]:.4f})", fontsize=8, fontweight='bold')
+                else:
+                    ax_loss.set_title(f"Trial {plot_index+1} (VL: {self.vl_loss[-1]:.4f})", fontsize=8, fontweight='bold')
             else:
-                ax_loss.set_title(f"Trial {plot_index+1} (VL: {self.vl_loss[-1]:.4f})", fontsize=8, fontweight='bold')
+                if title == "best_model":
+                    ax_loss.set_title(f"Retraining", fontsize=8, fontweight='bold')
+                else:
+                    ax_loss.set_title(f"Retraining: trial {plot_index+1}", fontsize=8, fontweight='bold')
 
             ax_loss.legend(fontsize=7)
             ax_loss.grid()
@@ -398,10 +406,16 @@ class NeuralNetwork:
             if plot_index % cols == 0:
                 ax_acc.set_ylabel("Accuracy / Validation accuracy" if self.ts_accuracy else "Accuracy")
 
-            if title == "best_model":
-                ax_acc.set_title(f"Best model (ACC: {self.vl_accuracy[-1]:.2%})", fontsize=8, fontweight='bold')
+            if self.vl_accuracy is not None:
+                if title == "best_model":
+                    ax_acc.set_title(f"Best model (ACC: {self.vl_accuracy[-1]:.2%})", fontsize=8, fontweight='bold')
+                else:
+                    ax_acc.set_title(f"Trial {plot_index+1} (VL: {self.vl_accuracy[-1]:.2%})", fontsize=8, fontweight='bold')
             else:
-                ax_acc.set_title(f"Trial {plot_index+1} (VL: {self.vl_loss[-1]:.2%})", fontsize=8, fontweight='bold')
+                if title == "best_model":
+                    ax_acc.set_title(f"Retraining", fontsize=8, fontweight='bold')
+                else:
+                    ax_acc.set_title(f"Retraining: trial {plot_index+1}", fontsize=8, fontweight='bold')
 
             ax_acc.legend(fontsize=7)
             ax_acc.grid()

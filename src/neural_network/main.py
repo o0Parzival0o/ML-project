@@ -25,7 +25,7 @@ if __name__ == "__main__":
         monk_train_data = config["paths"]["train_data"]
         monk_test_data = config["paths"]["test_data"]
         X_train, T_train, input_units = data_loader(monk_train_data, data_type="MONK", shuffle=True)       
-        X_test, T_test, _ = data_loader(monk_test_data, data_type="MONK", shuffle=False)
+        X_test, T_test, _ = data_loader(monk_test_data, data_type="MONK", shuffle=True)
 
         training_sets = [X_train, T_train]
 
@@ -54,8 +54,7 @@ if __name__ == "__main__":
                             neurons_per_layer=config["architecture"]["neurons_per_layer"],
                             training_hyperpar=training_hyperpar,
                             extractor=extractor,
-                            activation=act_func,
-                            early_stopping=early_stopping)
+                            activation=act_func)
             
             nn.train(X_train, T_train, X_val, T_val, train_args=train_args, loss_func=loss_func, early_stopping=early_stopping)
             nn.test(X_test, T_test)
@@ -120,8 +119,7 @@ if __name__ == "__main__":
                                neurons_per_layer=config["architecture"]["neurons_per_layer"],
                                training_hyperpar=training_hyperpar,
                                extractor=extractor,
-                               activation=act_func,
-                               early_stopping=early_stopping)
+                               activation=act_func)
             
             nn.train(X_train, T_train, X_val, T_val, train_args=train_args, loss_func=loss_func, early_stopping=early_stopping)
             # nn.test(X_test, T_test)

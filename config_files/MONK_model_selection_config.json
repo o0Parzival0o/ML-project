@@ -1,7 +1,7 @@
 {
   "architecture": {
       "output_units": 1,
-      "neurons_per_layer": [[2,2], [4,4]]
+      "neurons_per_layer": [[2], [6]]
   },
   "functions": {
       "hidden": "relu",
@@ -13,13 +13,13 @@
   "training": {
       "epochs": 5000,
       "search_type": "random",
-      "number_random_trials": 9,
+      "number_random_trials": 16,
       "learning_rate": [0.001, 0.1],
       "momentum": [0.75, 0.95],
       "regularization": [0.01, 0.000001],
       "decay_factor": 0.0001,
       "batch": {
-          "batch_size": "full",
+          "batch_size": 32,
           "drop_last": true
       },
       "early_stopping": {
@@ -34,7 +34,7 @@
       }
   },
     "validation": {
-        "method": "k_fold_cv",
+        "method": "hold_out",
         "folds": 5
   },
     "assessment": {
