@@ -417,4 +417,3 @@ class NeuralNetwork:
             plt.show()
         
 
-
