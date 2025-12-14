@@ -1,20 +1,20 @@
 {
   "architecture": {
       "output_units": 1,
-      "neurons_per_layer": [[2], [4,2]]
+      "neurons_per_layer": [[2,2], [4,4]]
   },
   "functions": {
       "hidden": "relu",
       "hidden_param": 0.0,
       "output": "sigmoid",
       "output_param": 1.0,
-      "loss": "binary_crossentropy"
+      "loss": "MSE"
   },
   "training": {
-      "epochs": 2000,
-      "search_type": "grid",
+      "epochs": 5000,
+      "search_type": "random",
       "number_random_trials": 9,
-      "learning_rate": [0.001, 0.01],
+      "learning_rate": [0.001, 0.1],
       "momentum": [0.75, 0.95],
       "regularization": [0.01, 0.000001],
       "batch": {
@@ -28,11 +28,16 @@
       },
       "splitting": {
           "tr": 0.75,
-          "vl": 0.25
+          "vl": 0.15,
+          "ts": 0.10
       }
   },
     "validation": {
         "method": "k_fold_cv",
+        "folds": 5
+  },
+    "assessment": {
+        "method": "hold_out",
         "folds": 5
   },
   "initialization": {

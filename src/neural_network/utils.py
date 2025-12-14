@@ -60,25 +60,25 @@ def data_splitting(X, T, proportions=[1,0,0]):
     if any(prop < 0 for prop in proportions):
         raise ValueError('Elements in "proportions" must be greater or equal than 0')
     
-    if sum(proportions) == 1:
-        n = len(X)
-        X_splits = []
-        T_splits = []
+    if sum(proportions) != 1:
+        proportions = [i/sum(proportions) for i in proportions]
 
-        start = 0
-        for p in proportions:
-            end = start + int(p * n)
+    n = len(X)
+    X_splits = []
+    T_splits = []
 
-            X_splits.append(X[start:end])
-            T_splits.append(T[start:end])
-            
-            start = end
+    start = 0
+    for p in proportions:
+        end = start + int(p * n)
 
-        # Ritorno direttamente tutti i vettori come variabili separate
-        return (*X_splits, *T_splits)
-    
-    else:
-        raise ValueError('Sum over "proportions" list is not 1')
+        X_splits.append(X[start:end])
+        T_splits.append(T[start:end])
+        
+        start = end
+
+    # Ritorno direttamente tutti i vettori come variabili separate
+    return (*X_splits, *T_splits)
+
 
 def flatten_config(d, parent_key='', sep='.'):
 
