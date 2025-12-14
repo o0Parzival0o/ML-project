@@ -343,50 +343,66 @@ class NeuralNetwork:
         accuracy = correct_predict/len(T)
         print(f"The model obtained an accuracy of {accuracy:.2%} on test set")
     
-    def plot_metrics(self, fig_loss=None, fig_acc=None, rows=1, cols=1, plot_index=0, changing_hyperpar=None):
+    def plot_metrics(self, fig_loss=None, fig_acc=None, rows=1, cols=1, plot_index=0, changing_hyperpar=None, title=None):
         
         if self.tr_loss != None and fig_loss:
             ax_loss = fig_loss.add_subplot(rows, cols, plot_index + 1)
             ax_loss.plot(self.tr_loss, c='r', linestyle='-', label='Training')
+
             if self.vl_loss != None:
                 ax_loss.plot(self.vl_loss, c='b', linestyle='--', label='Validation')
+
             if changing_hyperpar:
                 for k, v in changing_hyperpar.items():
                     param_name = k.split(".")[-1]
                     ax_loss.plot([], [], " ", label=f"{param_name}: {v}")
+
             if plot_index >= rows * (cols - 1):
                 ax_loss.set_xlabel("Epochs")
             if plot_index % cols == 0:
                 ax_loss.set_ylabel("Loss / Validation loss" if self.vl_loss else "Loss")
-            ax_loss.set_title(f"Trial {plot_index+1} (VL: {self.vl_loss[-1]:.4f})", fontsize=8, fontweight='bold')
+
+            if title == "best_model":
+                ax_loss.set_title(f"Best model (VL: {self.vl_loss[-1]:.4f})", fontsize=8, fontweight='bold')
+            else:
+                ax_loss.set_title(f"Trial {plot_index+1} (VL: {self.vl_loss[-1]:.4f})", fontsize=8, fontweight='bold')
+
             ax_loss.legend(fontsize=7)
             ax_loss.grid()
-            # ax_loss.set_yscale('log')
+            ax_loss.set_yscale('log')
 
         if self.tr_accuracy != None and fig_acc:
             ax_acc = fig_acc.add_subplot(rows, cols, plot_index + 1)
             ax_acc.plot(self.tr_accuracy, c='r', linestyle='-', label='Training')
+
             if self.vl_accuracy != None:
                 ax_acc.plot(self.vl_accuracy, c='b', linestyle='--', label='Validation')
+
             if changing_hyperpar:
                 for k, v in changing_hyperpar.items():
                     param_name = k.split(".")[-1]
                     ax_acc.plot([], [], " ", label=f"{param_name}: {v}")
+
             if plot_index >= rows * (cols - 1):
                 ax_acc.set_xlabel("Epochs")
             if plot_index % cols == 0:
                 ax_acc.set_ylabel("Accuracy / Validation accuracy" if self.ts_accuracy else "Accuracy")
-            ax_acc.set_title(f"Trial {plot_index+1} (VL: {self.vl_loss[-1]:.4f})", fontsize=8, fontweight='bold')
+
+            if title == "best_model":
+                ax_acc.set_title(f"Best model (ACC: {self.vl_accuracy[-1]:.2%})", fontsize=8, fontweight='bold')
+            else:
+                ax_acc.set_title(f"Trial {plot_index+1} (VL: {self.vl_loss[-1]:.2%})", fontsize=8, fontweight='bold')
+
             ax_acc.legend(fontsize=7)
             ax_acc.grid()
 
         if plot_index == rows * cols - 1:
             if fig_loss is not None:
                 fig_loss.subplots_adjust(hspace=0.5)
-                fig_loss.savefig('../../plots/loss.png', dpi=300)
+                fig_loss.savefig(f'../../plots/{title}_loss.png', dpi=300)
             if fig_acc is not None:
                 fig_acc.subplots_adjust(hspace=0.5)
-                fig_acc.savefig('../../plots/accuracy.png', dpi=300)
+                fig_acc.savefig(f'../../plots/{title}_accuracy.png', dpi=300)
             plt.tight_layout()
             plt.show()
         

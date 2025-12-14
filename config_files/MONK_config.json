@@ -5,7 +5,7 @@
   },
   "functions": {
       "hidden": "tanh",
-      "hiddem_param": 1.0,
+      "hidden_param": 1.0,
       "output": "sigmoid",
       "output_param": 1.0,
       "loss": "binary_crossentropy"

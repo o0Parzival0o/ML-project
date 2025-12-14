@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
 
     if data == "MONK":
-        config = utils.load_config_json("MONK_config.json" if single_trial else "MONK_model_selection_config.json")
+        config = utils.load_config_json("../../config_files/MONK_config.json" if single_trial else "../../config_files/MONK_model_selection_config.json")
         random.seed(config["general"]["seed"])
 
         monk_train_data = config["paths"]["train_data"]
@@ -60,16 +60,16 @@ if __name__ == "__main__":
             nn.train(X_train, T_train, X_val, T_val, train_args=train_args, loss_func=loss_func, early_stopping=early_stopping)
             nn.test(X_test, T_test)
 
-            # fig1 = plt.figure(figsize=(5, 4))
-            # fig2 = plt.figure(figsize=(5, 4))
-            # nn.plot_metrics(fig1, fig2)
+            fig1 = plt.figure(figsize=(5, 4))
+            fig2 = plt.figure(figsize=(5, 4))
+            nn.plot_metrics(fig1, fig2, title="single_try")
 
         else:
             model_assessment(training_sets, input_units, config)
 
 
     else:
-        config = utils.load_config_json("config.json" if single_trial else "model_selection_config.json")
+        config = utils.load_config_json("../../config_files/config.json" if single_trial else "../../config_files/model_selection_config.json")
         random.seed(config["general"]["seed"])
 
         CUP_train_data = config["paths"]["train_data"]
@@ -85,6 +85,12 @@ if __name__ == "__main__":
         T_train = (T_train - T_mean) / T_std
         # X_CUP = (X_CUP - X_mean) / X_std              # remember to do the inverse at the end with "inverse_scaling"
 
+        # X_min, X_max = utils.scaling(X_train)
+        # T_min, T_max = utils.scaling(T_train)
+        # X_train = (X_train - X_min) / (X_max - X_min)
+        # T_train = (T_train - T_min) / (T_max - T_min)
+        # X_CUP = (X_CUP - X_min) / (X_max - X_min)
+
         # utils.plot_correlation(X_train, T_train)
 
         training_sets = [X_train, T_train]
@@ -97,15 +103,17 @@ if __name__ == "__main__":
             train_args = config["training"]
 
             hidden_act_func = config["functions"]["hidden"]
+            hidden_act_param = config["functions"]["hidden_param"]
             output_act_func = config["functions"]["output"]
-            act_func = [hidden_act_func, output_act_func]
+            output_act_param = config["functions"]["output_param"]
+            act_func = [[hidden_act_func, hidden_act_param], [output_act_func, output_act_param]]
             
             training_hyperpar = config["training"]
             early_stopping = config["training"]["early_stopping"]
 
             loss_func = config["functions"]["loss"]
 
-            extractor = utils.create_random_extractor(config["initialization"]["method"])
+            extractor = utils.create_extractor(config["initialization"]["method"])
 
             nn = NeuralNetwork(num_inputs=input_units,
                                num_outputs=config["architecture"]["output_units"],
@@ -118,9 +126,9 @@ if __name__ == "__main__":
             nn.train(X_train, T_train, X_val, T_val, train_args=train_args, loss_func=loss_func, early_stopping=early_stopping)
             # nn.test(X_test, T_test)
 
-            # fig1 = plt.figure(figsize=(5, 4))
-            # fig2 = plt.figure(figsize=(5, 4))
-            # nn.plot_metrics(fig1, fig2)
+            fig1 = plt.figure(figsize=(5, 4))
+            fig2 = plt.figure(figsize=(5, 4))
+            nn.plot_metrics(fig1, fig2, title="single_try")
         
         else:
             model_assessment(training_sets, input_units, config)
@@ -138,4 +146,4 @@ if __name__ == "__main__":
     #TODO forse ha senso rimuovere dai config il seme (tanto basta far sì che sia riproducibile con seme hardcodato su macchine diverse, non ci interessa cambiare il seme, oppure vedere se ha senso tenerlo e provare con inizializzazioni diverse)
     #TODO nn validate da fare
     #TODO uniformare impostazione seed randomico da json nei vari file py, non so se sia per come funziona rand ma per ora l'inizializzazione mi sembra essere diversa tra run diverse
-        
+    

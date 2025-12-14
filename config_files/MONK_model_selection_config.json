@@ -11,7 +11,7 @@
       "loss": "MSE"
   },
   "training": {
-      "epochs": 4000,
+      "epochs": 5000,
       "search_type": "random",
       "number_random_trials": 9,
       "learning_rate": [0.001, 0.1],
@@ -28,12 +28,12 @@
       },
       "splitting": {
           "tr": 0.75,
-          "vl": 0.25,
-          "ts": 0.00
+          "vl": 0.15,
+          "ts": 0.10
       }
   },
     "validation": {
-        "method": "hold_out",
+        "method": "k_fold_cv",
         "folds": 5
   },
     "assessment": {
