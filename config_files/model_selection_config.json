@@ -8,16 +8,19 @@
       "hidden_param": 0.0,
       "output": "linear",
       "output_param": 1.0,
-      "loss": "MEE"
+      "loss": "MSE"
   },
   "training": {
-      "epochs": 5000,
+      "epochs": 10000,
       "search_type": "random",
-      "number_random_trials": 16,
-      "learning_rate": [0.0001, 0.01],
+      "number_random_trials": 4,
+      "learning_rate": {
+          "eta": 0.01,
+          "min_rate": 100,
+          "decay_factor": 0.0001
+      },
       "momentum": [0.75, 0.95],
       "regularization": [0.001, 0.000001],
-      "decay_factor": 0.0001,
       "batch": {
           "batch_size": "full",
           "drop_last": true
@@ -25,7 +28,11 @@
       "early_stopping": {
           "enabled": true,
           "patience": 50,
-          "monitor": "val_loss"
+          "monitor": "val_loss",
+          "epsilon_loss_up": 0.002,
+          "epsilon_loss_down": 0.001,
+          "epsilon_accuracy_up": 0.002,
+          "epsilon_accuracy_down": 0.0005
       },
       "splitting": {
           "tr": 0.50,
@@ -34,10 +41,12 @@
       }
   },
     "validation": {
-        "method": "hold_out"
+        "method": "hold_out",
+        "folds": 5
   },
     "assessment": {
-        "method": "hold_out"
+        "method": "hold_out",
+        "folds": 5
   },
   "initialization": {
       "method": "random"
