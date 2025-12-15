@@ -25,7 +25,8 @@ def model_assessment(training_set, input_units, config):
 
         final_model, risk, accuracy = hold_out_assessment(config, input_units, train_set, test_set)
         print(f"Test risk: {risk:.6f}")
-        print(f"Test accuracy: {accuracy:.2%}")
+        if accuracy is not None:
+            print(f"Test accuracy: {accuracy:.2%}")
         return final_model, risk, accuracy
     
     else:
@@ -33,7 +34,8 @@ def model_assessment(training_set, input_units, config):
 
         final_model, avg_risk, std_risk, avg_accuracy, std_accuracy = k_fold_assessment(num_folds, config, input_units, [X_training, T_training])
         print(f"Average {num_folds}-fold test risk: {avg_risk:.6f} ± {std_risk:.6f}")
-        print(f"Average {num_folds}-fold test accuracy: {avg_accuracy:.2%} ± {std_accuracy:.2%}\n")
+        if avg_accuracy is not None:
+            print(f"Average {num_folds}-fold test accuracy: {avg_accuracy:.2%} ± {std_accuracy:.2%}\n")
         return avg_risk, avg_accuracy
     
 
@@ -107,11 +109,13 @@ def grid_search(X_training, T_training, input_units, config):
             best_vl_loss = loss
             best_trial_idx = i
             print(f"Loss: {loss:.6f}")
-            print(f"(accuracy: {accuracy:.2%})")
+            if accuracy is not None:
+                print(f"(accuracy: {accuracy:.2%})")
             print(f"New best found!\n")
         else:
             print(f"Loss: {loss:.6f}\n")
-            print(f"(accuracy: {accuracy:.2%})")
+            if accuracy is not None:
+                print(f"(accuracy: {accuracy:.2%})")
 
         nn.plot_metrics(fig_loss, fig_acc, n_rows, n_cols, plot_index=i, changing_hyperpar=changing_hyperpar[i], title="grid_search")
 
@@ -211,11 +215,13 @@ def random_search(X_training, T_training, input_units, config):
             best_vl_loss = loss
             best_trial_idx = i
             print(f"Loss: {loss:.6f}")
-            print(f"(accuracy: {accuracy:.2%})")
+            if accuracy is not None:
+                print(f"(accuracy: {accuracy:.2%})")
             print(f"New best found!\n")
         else:
             print(f"Loss: {loss:.6f}")
-            print(f"(accuracy: {accuracy:.2%})\n")
+            if accuracy is not None:
+                print(f"(accuracy: {accuracy:.2%})\n")
         
         nn.plot_metrics(fig_loss, fig_acc, n_rows, n_cols, plot_index=i, changing_hyperpar=changing_hyperpar[i], title="random_search")
 
@@ -288,7 +294,8 @@ def model_selection(trial_config, X_train, T_train, input_units):
         nn, avg_loss, std_loss, avg_accuracy, std_accuracy = k_fold_selection(num_folds, trial_config, input_units, [X_train, T_train])
 
         print(f"Average {num_folds}-fold loss: {avg_loss:.6f} ± {std_loss:.6f}")
-        print(f"Average {num_folds}-fold accuracy: {avg_accuracy:.2%} ± {std_accuracy:.2%}\n")
+        if avg_accuracy is not None:
+            print(f"Average {num_folds}-fold accuracy: {avg_accuracy:.2%} ± {std_accuracy:.2%}\n")
         return nn, avg_loss, avg_accuracy
     
 
@@ -362,7 +369,8 @@ def k_fold_selection(k, config, input_units, train_set):
     for i in range(k_folds):
         val_start, val_end = indices[i]
         
-        X_val_k, T_val_k = np.array(train_set[val_start:val_end])
+        X_val_k = np.array(train_set[0][val_start:val_end])
+        T_val_k = np.array(train_set[1][val_start:val_end])
         
         X_train_k = np.concatenate([train_set[0][:val_start], train_set[0][val_end:]])
         T_train_k = np.concatenate([train_set[1][:val_start], train_set[1][val_end:]])
@@ -400,7 +408,8 @@ def k_fold_assessment(k, config, input_units, train_set):
         print(f"External fold {i+1}/{k_folds} :")
         test_start, test_end = indices[i]
         
-        X_test_k, T_test_k = train_set[test_start:test_end]
+        X_test_k = train_set[0][test_start:test_end]
+        T_test_k = train_set[1][test_start:test_end]
         
         X_train_k = np.concatenate([train_set[0][:test_start], train_set[0][test_end:]])
         T_train_k = np.concatenate([train_set[1][:test_start], train_set[1][test_end:]])
@@ -416,7 +425,8 @@ def k_fold_assessment(k, config, input_units, train_set):
         risk, accuracy, _ = evaluate_model(final_model, [X_test_k, T_test_k], loss_func)
 
         print(f"Risk: {risk:.6f}")
-        print(f"(accuracy: {accuracy:.2%})\n")
+        if accuracy is not None:
+            print(f"(accuracy: {accuracy:.2%})\n")
 
         total_risk.append(risk)
         total_accuracy.append(accuracy)

@@ -82,19 +82,17 @@ class NeuralNetwork:
             layer.delta_biases_old = np.zeros_like(layer.biases)
         
 
-        self.learning_rate = training_hyperpar["learning_rate"]
-        self.min_learning_rate = training_hyperpar["learning_rate"]/100
-        self.orig_learning_rate = training_hyperpar["learning_rate"]
+        self.orig_learning_rate = training_hyperpar["learning_rate"]["eta"]
+        self.learning_rate = self.orig_learning_rate
+        self.min_learning_rate = self.orig_learning_rate / training_hyperpar["learning_rate"]["min_rate"]
+        self.decay_factor = training_hyperpar["learning_rate"]["decay_factor"]
         self.momentum = training_hyperpar["momentum"]
         self.regularization = training_hyperpar["regularization"]
-        self.decay_factor = training_hyperpar["decay_factor"]
 
         self.tr_loss = None
         self.tr_accuracy = None
         self.vl_loss = None
         self.vl_accuracy = None
-        self.ts_loss = None
-        self.ts_accuracy = None
 
         self.total_iters = 0
 
@@ -172,7 +170,7 @@ class NeuralNetwork:
             
             layer.delta_weights_old = delta_weights
             layer.delta_biases_old = delta_biases
-            self.learning_rate = self.orig_learning_rate / (1+self.decay_factor*self.total_iters) if self.learning_rate > self.min_learning_rate else self.learning_rate
+            self.learning_rate = self.orig_learning_rate / (1 + self.decay_factor * self.total_iters) if self.learning_rate > self.min_learning_rate else self.learning_rate
 
 
     def train(self, X_tr, T_tr, X_vl=None, T_vl=None, train_args=None, loss_func=None, early_stopping = None):
@@ -181,10 +179,20 @@ class NeuralNetwork:
         batch_droplast = train_args["batch"]["drop_last"]
         max_epochs = train_args["epochs"]
 
-        #Early stopping variables
+        # early stopping variables
         early_stopping_cond = early_stopping["enabled"]
         patience = early_stopping["patience"] if early_stopping_cond else None
         monitor = early_stopping["monitor"] if early_stopping_cond else None
+        # "sensibility" of early stopping
+        if early_stopping_cond:
+            if monitor == "val_loss":
+                epsilon_up = early_stopping["epsilon_loss_up"]
+                epsilon_down = early_stopping["epsilon_loss_down"]
+            elif monitor == "acc_loss":
+                epsilon_up = early_stopping["epsilon_accuracy_up"]
+                epsilon_down = early_stopping["epsilon_accuracy_down"]
+            else:
+                raise ValueError('monitor parameter must be "val_loss" or "val_accuracy"')
 
         if X_vl is not None:
             best_model_weights = copy.deepcopy(self.layers)
@@ -280,16 +288,12 @@ class NeuralNetwork:
                 pass
 
             elif early_stopping_cond and monitor == "val_loss":
-                
-                # "sensibility" of early stopping
-                rel_epsilon1 = 0.001
-                rel_epsilon2 = 0.002
 
-                if current_vl_loss <= np.min(vl_loss[:-1]) * (1 - rel_epsilon1):
+                if current_vl_loss <= np.min(vl_loss[:-1]) * (1 - epsilon_down):
                     patience_index = patience
-                    best_model_weights = copy.deepcopy(self.layers)                     ###########
+                    best_model_weights = copy.deepcopy(self.layers)
 
-                elif current_vl_loss > np.min(vl_loss[:-1]) * (1 + rel_epsilon2):
+                elif current_vl_loss > np.min(vl_loss[:-1]) * (1 + epsilon_up):
                     patience_index -= 1
                 
                 else:
@@ -297,22 +301,16 @@ class NeuralNetwork:
 
             elif early_stopping_cond and monitor == "val_accuracy":
 
-                # "sensibility" of early stopping
-                rel_epsilon1 = 0.0005
-                rel_epsilon2 = 0.002
-
-                if current_vl_accuracy >= np.max(vl_accuracy[:-1]) * (1 - rel_epsilon1):
+                if current_vl_accuracy >= np.max(vl_accuracy[:-1]) * (1 + epsilon_up):
                     patience_index = patience
                     best_model_weights = copy.deepcopy(self.layers)
 
-                elif current_vl_accuracy < np.max(vl_accuracy[:-1]) * (1 + rel_epsilon2):
+                elif current_vl_accuracy < np.max(vl_accuracy[:-1]) * (1 - epsilon_down):
                     patience_index -= 1
                 
                 else:
                     pass
 
-            else:
-                raise ValueError('monitor parameter must be "val_loss" or "val_accuracy"')
 
             tr_loss.append(self.loss_calculator(X_tr, T_tr, loss_func))
             tr_accuracy.append(self.accuracy_calculator(X_tr, T_tr))
@@ -338,6 +336,8 @@ class NeuralNetwork:
         return loss
     
     def accuracy_calculator(self, X, T):
+        if self.output_activation.__name__ not in ["sigmoid", "tanh"]:
+            return
         correct_predict = 0
         for x,t in zip(X,T):
             predictions = self.feed_forward(x)
@@ -357,11 +357,11 @@ class NeuralNetwork:
     
     def plot_metrics(self, fig_loss=None, fig_acc=None, rows=1, cols=1, plot_index=0, changing_hyperpar=None, title=None):
         
-        if self.tr_loss != None and fig_loss:
+        if self.tr_loss is not None and fig_loss:
             ax_loss = fig_loss.add_subplot(rows, cols, plot_index + 1)
             ax_loss.plot(self.tr_loss, c='r', linestyle='-', label='Training')
 
-            if self.vl_loss != None:
+            if self.vl_loss is not None:
                 ax_loss.plot(self.vl_loss, c='b', linestyle='--', label='Validation')
 
             if changing_hyperpar:
@@ -372,7 +372,7 @@ class NeuralNetwork:
             if plot_index >= rows * (cols - 1):
                 ax_loss.set_xlabel("Epochs")
             if plot_index % cols == 0:
-                ax_loss.set_ylabel("Loss / Validation loss" if self.vl_loss else "Loss")
+                ax_loss.set_ylabel("Loss / Validation loss" if self.vl_loss is not None else "Loss")
 
             if self.vl_loss is not None:
                 if title == "best_model":
@@ -389,11 +389,11 @@ class NeuralNetwork:
             ax_loss.grid()
             ax_loss.set_yscale('log')
 
-        if self.tr_accuracy != None and fig_acc:
+        if self.tr_accuracy is not None and fig_acc:
             ax_acc = fig_acc.add_subplot(rows, cols, plot_index + 1)
             ax_acc.plot(self.tr_accuracy, c='r', linestyle='-', label='Training')
 
-            if self.vl_accuracy != None:
+            if self.vl_accuracy is not None:
                 ax_acc.plot(self.vl_accuracy, c='b', linestyle='--', label='Validation')
 
             if changing_hyperpar:
@@ -404,9 +404,9 @@ class NeuralNetwork:
             if plot_index >= rows * (cols - 1):
                 ax_acc.set_xlabel("Epochs")
             if plot_index % cols == 0:
-                ax_acc.set_ylabel("Accuracy / Validation accuracy" if self.ts_accuracy else "Accuracy")
+                ax_acc.set_ylabel("Accuracy / Validation accuracy" if self.vl_accuracy is not None else "Accuracy")
 
-            if self.vl_accuracy is not None:
+            if self.output_activation.__name__ in ["sigmoid", "tanh"]:
                 if title == "best_model":
                     ax_acc.set_title(f"Best model (ACC: {self.vl_accuracy[-1]:.2%})", fontsize=8, fontweight='bold')
                 else:
@@ -424,7 +424,7 @@ class NeuralNetwork:
             if fig_loss is not None:
                 fig_loss.subplots_adjust(hspace=0.5)
                 fig_loss.savefig(f'../../plots/{title}_loss.png', dpi=300)
-            if fig_acc is not None:
+            if self.output_activation.__name__ in ["sigmoid", "tanh"]:
                 fig_acc.subplots_adjust(hspace=0.5)
                 fig_acc.savefig(f'../../plots/{title}_accuracy.png', dpi=300)
             plt.tight_layout()
