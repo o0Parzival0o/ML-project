@@ -159,8 +159,8 @@ class NeuralNetwork:
                 delta_biases = self.learning_rate * layer.bp_deltas + self.momentum * layer.delta_biases_old
                                 
             else:
-                delta_weights = self.learning_rate * (layer.weights_grad_acc / l) + self.momentum * layer.delta_weights_old
-                delta_biases = self.learning_rate * (layer.biases_grad_acc / l) + self.momentum * layer.delta_biases_old
+                delta_weights = self.learning_rate * layer.weights_grad_acc + self.momentum * layer.delta_weights_old
+                delta_biases = self.learning_rate * layer.biases_grad_acc + self.momentum * layer.delta_biases_old
             
             layer.weights = layer.weights + delta_weights - self.regularization * layer.weights
             layer.biases = layer.biases + delta_biases - self.regularization * layer.biases

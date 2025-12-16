@@ -27,9 +27,9 @@
       },
       "early_stopping": {
           "enabled": true,
-          "patience": 40,
+          "patience": 50,
           "monitor": "val_loss",
-          "epsilon_loss_down": 0.00001,
+          "epsilon_loss_down": 0.000001,
           "epsilon_accuracy_up": 0.005
       },
       "splitting": {
