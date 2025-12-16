@@ -386,10 +386,11 @@ class NeuralNetwork:
             if self.vl_accuracy is not None:
                 ax_acc.plot(self.vl_accuracy, c='b', linestyle='--', label='Validation')
 
-            if changing_hyperpar:
-                for k, v in changing_hyperpar.items():
-                    param_name = k.split(".")[-1]
-                    ax_acc.plot([], [], " ", label=f"{param_name}: {v}")
+            if self.vl_accuracy is not None:
+                if changing_hyperpar:
+                    for k, v in changing_hyperpar.items():
+                        param_name = k.split(".")[-1]
+                        ax_acc.plot([], [], " ", label=f"{param_name}: {v}")
 
             if plot_index >= rows * (cols - 1):
                 ax_acc.set_xlabel("Epochs")
@@ -397,10 +398,15 @@ class NeuralNetwork:
                 ax_acc.set_ylabel("Accuracy / Validation accuracy" if self.vl_accuracy is not None else "Accuracy")
 
             if self.output_activation.__name__ in ["sigmoid", "tanh"]:
-                if title == "best_model":
-                    ax_acc.set_title(f"Best model (ACC: {self.vl_accuracy[-1]:.2%})", fontsize=8, fontweight='bold')
+                if self.vl_accuracy is not None and len(self.vl_accuracy) > 0:
+                    val_acc_text = f"{self.vl_accuracy[-1]:.2%}"
                 else:
-                    ax_acc.set_title(f"Trial {plot_index+1} (VL: {self.vl_accuracy[-1]:.2%})", fontsize=8, fontweight='bold')
+                    val_acc_text = "N/A"
+
+                if title == "best_model":
+                    ax_acc.set_title(f"Best model (ACC: {val_acc_text})", fontsize=8, fontweight='bold')
+                else:
+                    ax_acc.set_title(f"Trial {plot_index+1} (VL: {val_acc_text})", fontsize=8, fontweight='bold')
             else:
                 if title == "best_model":
                     ax_acc.set_title(f"Retraining", fontsize=8, fontweight='bold')

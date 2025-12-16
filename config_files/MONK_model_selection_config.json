@@ -15,21 +15,21 @@
       "search_type": "random",
       "number_random_trials": 16,
       "learning_rate": {
-          "eta": 0.01,
+          "eta": [0.01,0.001],
           "min_rate": 100,
-          "decay_factor": 0.0001
+          "decay_factor": 0.00001
       },
-      "momentum": [0.75, 0.95],
+      "momentum": [0.35, 0.95],
       "regularization": [0.01, 0.000001],
       "batch": {
-          "batch_size": 32,
-          "drop_last": true
+          "batch_size":"full",
+          "drop_last": false
       },
       "early_stopping": {
           "enabled": true,
-          "patience": 20,
+          "patience": 40,
           "monitor": "val_loss",
-          "epsilon_loss_down": 0.0001,
+          "epsilon_loss_down": 0.00001,
           "epsilon_accuracy_up": 0.005
       },
       "splitting": {
@@ -39,7 +39,7 @@
       }
   },
     "validation": {
-        "method": "hold_out",
+        "method": "k_fold_cv",
         "folds": 5
   },
     "assessment": {
