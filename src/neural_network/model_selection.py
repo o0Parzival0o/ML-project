@@ -9,19 +9,23 @@ import matplotlib.pyplot as plt
 np.random.seed(42)
 
 
-def model_assessment(training_set, input_units, config):
-    X_training, T_training = training_set
+def model_assessment(training_sets, input_units, config, test_sets=None):
+    X_training, T_training = training_sets
     method_assessment = config["assessment"]["method"]
     
     if method_assessment not in ["hold_out", "k_fold_cv", "leave_one_out_cv"]:
         raise ValueError(f"Unknown assessment method: {method_assessment}")
     
     if method_assessment == "hold_out":
-        data_split_prop = [config["training"]["splitting"]["tr"] + config["training"]["splitting"]["vl"], config["training"]["splitting"]["ts"]]
-        X_train, X_test, T_train, T_test = utils.data_splitting(X_training, T_training, data_split_prop)
+        if test_sets is None:
+            data_split_prop = [config["training"]["splitting"]["tr"] + config["training"]["splitting"]["vl"], config["training"]["splitting"]["ts"]]
+            X_train, X_test, T_train, T_test = utils.data_splitting(X_training, T_training, data_split_prop)
 
-        train_set = [X_train, T_train]
-        test_set = [X_test, T_test]
+            train_set = [X_train, T_train]
+            test_set = [X_test, T_test]
+        else:
+            train_set = [X_training, T_training]
+            test_set = test_sets
 
         final_model, risk, accuracy = hold_out_assessment(config, input_units, train_set, test_set)
         print(f"Test risk: {risk:.6f}")
@@ -32,6 +36,7 @@ def model_assessment(training_set, input_units, config):
     else:
         num_folds = config["assessment"]["folds"] if method_assessment == "k_fold_cv" else len(X_training)
 
+        #TODO if test_sets is not None 
         final_model, avg_risk, std_risk, avg_accuracy, std_accuracy = k_fold_assessment(num_folds, config, input_units, [X_training, T_training])
         print(f"Average {num_folds}-fold test risk: {avg_risk:.6f} ± {std_risk:.6f}")
         if avg_accuracy is not None:

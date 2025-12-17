@@ -27,8 +27,6 @@ if __name__ == "__main__":
         X_train, T_train, input_units = data_loader(monk_train_data, data_type="MONK", shuffle=True)       
         X_test, T_test, _ = data_loader(monk_test_data, data_type="MONK", shuffle=True)
 
-        training_sets = [X_train, T_train]
-
         if single_trial:
 
             data_split_prop = [config["training"]["splitting"]["tr"], config["training"]["splitting"]["vl"]]
@@ -64,7 +62,9 @@ if __name__ == "__main__":
             nn.plot_metrics(fig1, fig2, title="single_try")
 
         else:
-            model_assessment(training_sets, input_units, config)
+            training_sets = [X_train, T_train]
+            test_sets = [X_test, T_test]
+            model_assessment(training_sets,input_units, config, test_sets)
 
 
     else:
@@ -91,8 +91,6 @@ if __name__ == "__main__":
         # X_CUP = (X_CUP - X_min) / (X_max - X_min)
 
         # utils.plot_correlation(X_train, T_train)
-
-        training_sets = [X_train, T_train]
 
         if single_trial:
 
@@ -129,6 +127,7 @@ if __name__ == "__main__":
             nn.plot_metrics(fig1, fig2, title="single_try")
         
         else:
+            training_sets = [X_train, T_train]
             model_assessment(training_sets, input_units, config)
 
 
