@@ -87,6 +87,7 @@ class NeuralNetwork:
         self.min_learning_rate = self.orig_learning_rate / training_hyperpar["learning_rate"]["min_rate"]
         self.decay_factor = training_hyperpar["learning_rate"]["decay_factor"]
         self.momentum = training_hyperpar["momentum"]
+        self.nesterov = training_hyperpar["nesterov"]
         self.regularization = training_hyperpar["regularization"]
 
         self.tr_loss = None
@@ -149,25 +150,41 @@ class NeuralNetwork:
                 raise Exception("Layer not recognized")
             
             previous_delta, previous_weights = layer.bp_deltas, layer.weights
-
-
+ 
     def weights_update(self, l):
-
         for layer in self.layers:
+            # gradient calculation
             if l == 1:
-                delta_weights = self.learning_rate * np.outer(layer.bp_deltas, layer.inputs) + self.momentum * layer.delta_weights_old
-                delta_biases = self.learning_rate * layer.bp_deltas + self.momentum * layer.delta_biases_old
-                                
+                grad_w = self.learning_rate * np.outer(layer.bp_deltas, layer.inputs)
+                grad_b = self.learning_rate * layer.bp_deltas
             else:
-                delta_weights = self.learning_rate * layer.weights_grad_acc + self.momentum * layer.delta_weights_old
-                delta_biases = self.learning_rate * layer.biases_grad_acc + self.momentum * layer.delta_biases_old
+                grad_w = self.learning_rate * layer.weights_grad_acc
+                grad_b = self.learning_rate * layer.biases_grad_acc
+
+            # delta_new = gradient + momentum  
+            delta_weights = grad_w + self.momentum * layer.delta_weights_old
+            delta_biases = grad_b + self.momentum * layer.delta_biases_old
             
-            layer.weights = layer.weights + delta_weights - self.regularization * layer.weights
-            layer.biases = layer.biases + delta_biases - self.regularization * layer.biases
-            
+            if self.nesterov:
+                # calculate the real weights
+                w_real = layer.weights - self.momentum * layer.delta_weights_old
+                b_real = layer.biases - self.momentum * layer.delta_biases_old
+                
+                # update new real weights
+                w_new_real = w_real + delta_weights - self.regularization * w_real
+                b_new_real = b_real + delta_biases - self.regularization * b_real
+                
+                # update new weights to lookahead point for next iteration
+                layer.weights = w_new_real + self.momentum * delta_weights
+                layer.biases = b_new_real + self.momentum * delta_biases
+            else:
+                # update new weights
+                layer.weights = layer.weights + delta_weights - self.regularization * layer.weights
+                layer.biases = layer.biases + delta_biases - self.regularization * layer.biases
+
+            # save current delta
             layer.delta_weights_old = delta_weights
             layer.delta_biases_old = delta_biases
-
 
     def train(self, X_tr, T_tr, X_vl=None, T_vl=None, train_args=None, loss_func=None, early_stopping = None):
 

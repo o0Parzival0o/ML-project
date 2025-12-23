@@ -18,6 +18,7 @@
           "decay_factor": 0.0001
       },
       "momentum": 0.85,
+      "nesterov": true,
       "regularization": 0.0001,
       "batch": {
           "batch_size": "full",
