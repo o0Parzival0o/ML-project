@@ -125,8 +125,9 @@ def grid_search(X_training, T_training, input_units, config):
         nn.plot_metrics(fig_loss, fig_acc, n_rows, n_cols, plot_index=i, changing_hyperpar=changing_hyperpar[i], title="grid_search")
 
     best_config = trials[best_trial_idx]
+    best_nn = nn_list[best_trial_idx]
 
-    return best_config
+    return best_config, best_nn
 
 
 def random_search(X_training, T_training, input_units, config):
@@ -231,8 +232,9 @@ def random_search(X_training, T_training, input_units, config):
         nn.plot_metrics(fig_loss, fig_acc, n_rows, n_cols, plot_index=i, changing_hyperpar=changing_hyperpar[i], title="random_search")
 
     best_config = trials[best_trial_idx]
+    best_nn = nn_list[best_trial_idx]
 
-    return best_config
+    return best_config, best_nn
 
 
 def launch_trial(conf, train_set, val_set, input_units, verbose=True):
@@ -304,7 +306,7 @@ def model_selection(trial_config, X_train, T_train, input_units):
         return nn, avg_loss, avg_accuracy
     
 
-def train_final_model(config, X_train, T_train, input_units):
+def train_final_model(config, X_train, T_train, input_units, epochs=None):
     output_units = config["architecture"]["output_units"]
     neurons_per_layer = config["architecture"]["neurons_per_layer"]
     hidden_act_func = config["functions"]["hidden"]
@@ -323,6 +325,9 @@ def train_final_model(config, X_train, T_train, input_units):
                        training_hyperpar=training_hyperpar,
                        extractor=extractor,
                        activation=act_func)
+    
+    if epochs is not None:
+        config["training"]["epochs"] = epochs
     
     nn.train(X_train, T_train, X_vl=None, T_vl=None, train_args=train_args,
              loss_func=loss_func, early_stopping={"enabled": False})
@@ -351,10 +356,10 @@ def hold_out_assessment(config, input_units, train_set, test_set):
     X_training, T_training = train_set
 
     # model selection
-    best_config = perform_search(X_training, T_training, input_units, config)
+    best_config, best_nn = perform_search(X_training, T_training, input_units, config)
 
     # retraining
-    final_model = train_final_model(best_config, X_training, T_training, input_units)
+    final_model = train_final_model(best_config, X_training, T_training, input_units, epochs=best_nn.best_epoch)
 
     # model assessment
     loss_func = losses.losses_functions[config["functions"]["loss"]]
@@ -386,13 +391,18 @@ def k_fold_selection(k, config, input_units, train_set):
         nn, loss, accuracy = launch_trial(config, current_train_set, current_val_test_set, input_units, verbose=False)
 
         total_loss.append(loss)
-        total_accuracy.append(accuracy)
+        if accuracy is not None:
+            total_accuracy.append(accuracy)
         nn_list.append(nn)
         
     avg_loss = np.mean(total_loss)
     std_loss = np.std(total_loss)
-    avg_accuracy = np.mean(total_accuracy)
-    std_accuracy = np.std(total_accuracy)
+    if len(total_accuracy) != 0:
+        avg_accuracy = np.mean(total_accuracy)
+        std_accuracy = np.std(total_accuracy)
+    else:
+        avg_accuracy = None
+        std_accuracy = None
 
     # save best model of kfold only for plotting (debug)
     best_fold_idx = np.argmin(total_loss)
@@ -420,10 +430,10 @@ def k_fold_assessment(k, config, input_units, train_set):
         T_train_k = np.concatenate([train_set[1][:test_start], train_set[1][test_end:]])
         
         # model selection
-        best_config = perform_search(X_train_k, T_train_k, input_units, config)
+        best_config, best_nn = perform_search(X_train_k, T_train_k, input_units, config)
 
         # retraining
-        final_model = train_final_model(best_config, X_train_k, T_train_k, input_units)
+        final_model = train_final_model(best_config, X_train_k, T_train_k, input_units, epochs=best_nn.best_epoch)
 
         # assessment
         loss_func = losses.losses_functions[config["functions"]["loss"]]
@@ -434,13 +444,18 @@ def k_fold_assessment(k, config, input_units, train_set):
             print(f"(accuracy: {accuracy:.2%})\n")
 
         total_risk.append(risk)
-        total_accuracy.append(accuracy)
+        if accuracy is not None:
+            total_accuracy.append(accuracy)
         nn_list.append(final_model)
         
     avg_risk = np.mean(total_risk)
     std_risk = np.std(total_risk)
-    avg_accuracy = np.mean(total_accuracy)
-    std_accuracy = np.std(total_accuracy)
+    if len(total_accuracy) != 0:
+        avg_accuracy = np.mean(total_accuracy)
+        std_accuracy = np.std(total_accuracy)
+    else:
+        avg_accuracy = None
+        std_accuracy = None
 
     # save best model of kfold only for plotting (debug)
     best_fold_idx = np.argmin(total_risk)

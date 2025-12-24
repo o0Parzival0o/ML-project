@@ -40,7 +40,7 @@
       }
   },
     "validation": {
-        "method": "k_fold_cv",
+        "method": "hold_out",
         "folds": 5
   },
     "assessment": {
@@ -51,8 +51,8 @@
       "method": "fan_in"
   },
   "paths": {
-      "train_data": "../../MONK files/monks-1.train",
-      "test_data": "../../MONK files/monks-1.test"
+      "train_data": "../../MONK files/monks-2.train",
+      "test_data": "../../MONK files/monks-2.test"
   },
   "general": {
       "seed": 42

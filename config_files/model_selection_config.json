@@ -1,7 +1,7 @@
 {
   "architecture": {
       "output_units": 4,
-      "neurons_per_layer": [[3,3,3,3], [10,10,10,10]]
+      "neurons_per_layer": [[10], [20], [50], [10,10], [20,20], [50,50], [20,20,20], [50,50,50], [64,64,64]]
   },
   "functions": {
       "hidden": "relu",
@@ -12,16 +12,16 @@
   },
   "training": {
       "epochs": 10000,
-      "search_type": "random",
-      "number_random_trials": 4,
+      "search_type": "grid",
+      "number_random_trials": 9,
       "learning_rate": {
-          "eta": 0.01,
+          "eta": 0.000001,
           "min_rate": 100,
           "decay_factor": 0.0001
       },
-      "momentum": [0.75, 0.95],
+      "momentum": 0.9,
       "nesterov": true,
-      "regularization": [0.001, 0.000001],
+      "regularization": 0.0001,
       "batch": {
           "batch_size": "full",
           "drop_last": true
@@ -30,19 +30,17 @@
           "enabled": true,
           "patience": 50,
           "monitor": "val_loss",
-          "epsilon_loss_up": 0.002,
           "epsilon_loss_down": 0.001,
-          "epsilon_accuracy_up": 0.002,
-          "epsilon_accuracy_down": 0.0005
+          "epsilon_accuracy_up": 0.002
       },
       "splitting": {
           "tr": 0.50,
-          "vl": 0.25,
-          "ts":0.25
+          "vl": 0.30,
+          "ts":0.20
       }
   },
     "validation": {
-        "method": "k_fold_cv",
+        "method": "hold_out",
         "folds": 5
   },
     "assessment": {

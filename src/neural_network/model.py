@@ -165,22 +165,9 @@ class NeuralNetwork:
             delta_weights = grad_w + self.momentum * layer.delta_weights_old
             delta_biases = grad_b + self.momentum * layer.delta_biases_old
             
-            if self.nesterov:
-                # calculate the real weights
-                w_real = layer.weights - self.momentum * layer.delta_weights_old
-                b_real = layer.biases - self.momentum * layer.delta_biases_old
-                
-                # update new real weights
-                w_new_real = w_real + delta_weights - self.regularization * w_real
-                b_new_real = b_real + delta_biases - self.regularization * b_real
-                
-                # update new weights to lookahead point for next iteration
-                layer.weights = w_new_real + self.momentum * delta_weights
-                layer.biases = b_new_real + self.momentum * delta_biases
-            else:
-                # update new weights
-                layer.weights = layer.weights + delta_weights - self.regularization * layer.weights
-                layer.biases = layer.biases + delta_biases - self.regularization * layer.biases
+            # update new weights
+            layer.weights = layer.weights + delta_weights - self.regularization * layer.weights
+            layer.biases = layer.biases + delta_biases - self.regularization * layer.biases
 
             # save current delta
             layer.delta_weights_old = delta_weights
@@ -200,7 +187,7 @@ class NeuralNetwork:
         if early_stopping_cond:
             if monitor == "val_loss":
                 epsilon_down = early_stopping["epsilon_loss_down"]
-            elif monitor == "acc_loss":
+            elif monitor == "val_accuracy":
                 epsilon_up = early_stopping["epsilon_accuracy_up"]
             else:
                 raise ValueError('monitor parameter must be "val_loss" or "val_accuracy"')
@@ -224,6 +211,7 @@ class NeuralNetwork:
 
         current_epoch = 0
         patience_index = patience
+        best_epoch = 0
         while current_epoch < max_epochs and (patience_index > 0 if early_stopping_cond else True):
             
             self.learning_rate = self.orig_learning_rate / (1 + self.decay_factor * current_epoch) if self.learning_rate > self.min_learning_rate else self.learning_rate
@@ -237,8 +225,21 @@ class NeuralNetwork:
             
                 #iterate on each pattern of and backprop
                 for x,t in zip(X_tr, T_tr):
+
+                    if self.nesterov:
+                        real_weights = [layer.weights.copy() for layer in self.layers]
+                        real_biases = [layer.biases.copy() for layer in self.layers]
+                        for layer in self.layers:
+                            layer.weights += self.momentum * layer.delta_weights_old
+                            layer.biases += self.momentum * layer.delta_biases_old
+
                     self.feed_forward(x)
                     self.back_prop(t)
+
+                    if self.nesterov:
+                        for layer, real_w, real_b in zip(self.layers, real_weights, real_biases):
+                            layer.weights = real_w
+                            layer.biases = real_b
 
                     #accumulate gradient
                     for layer in self.layers:
@@ -259,8 +260,21 @@ class NeuralNetwork:
 
                     counter = 0
                     for x,t in zip(X_tr,T_tr):
+
+                        if self.nesterov:
+                            real_weights = [layer.weights.copy() for layer in self.layers]
+                            real_biases = [layer.biases.copy() for layer in self.layers]
+                            for layer in self.layers:
+                                layer.weights += self.momentum * layer.delta_weights_old
+                                layer.biases += self.momentum * layer.delta_biases_old
+
                         self.feed_forward(x)
                         self.back_prop(t)
+
+                        if self.nesterov:
+                            for layer, real_w, real_b in zip(self.layers, real_weights, real_biases):
+                                layer.weights = real_w
+                                layer.biases = real_b
 
                         #using a counter manages the istances if dataset ends before batch size is reached
                         counter += 1
@@ -282,14 +296,29 @@ class NeuralNetwork:
 
                 elif batch_size == 1: 
                     for x,t in zip(X_tr,T_tr):
+
+                        if self.nesterov:
+                            real_weights = [layer.weights.copy() for layer in self.layers]
+                            real_biases = [layer.biases.copy() for layer in self.layers]
+                            for layer in self.layers:
+                                layer.weights += self.momentum * layer.delta_weights_old
+                                layer.biases += self.momentum * layer.delta_biases_old
+
                         self.feed_forward(x)
                         self.back_prop(t)
+
+                        if self.nesterov:
+                            for layer, real_w, real_b in zip(self.layers, real_weights, real_biases):
+                                layer.weights = real_w
+                                layer.biases = real_b
+
                         self.weights_update(1)
 
 
             else:
                 raise TypeError('batch_size is not positive int or "full".')
 
+            current_tr_loss = self.loss_calculator(X_tr, T_tr, loss_func)
             if X_vl is not None:
                 current_vl_loss = self.loss_calculator(X_vl, T_vl, loss_func)
                 vl_loss.append(current_vl_loss)
@@ -302,9 +331,10 @@ class NeuralNetwork:
 
             elif early_stopping_cond and monitor == "val_loss":
 
-                if current_vl_loss <= np.min(vl_loss[:-1]) * (1 - epsilon_down):
+                if current_vl_loss < current_tr_loss or current_vl_loss <= np.min(vl_loss[:-1]) * (1 - epsilon_down):
                     patience_index = patience
                     best_model_weights = copy.deepcopy(self.layers)
+                    best_epoch = current_epoch
 
                 else:
                     patience_index -= 1
@@ -314,19 +344,22 @@ class NeuralNetwork:
                 if current_vl_accuracy >= np.max(vl_accuracy[:-1]) * (1 + epsilon_up):
                     patience_index = patience
                     best_model_weights = copy.deepcopy(self.layers)
+                    best_epoch = current_epoch
                 
                 else:
                     patience_index -= 1
 
 
-            tr_loss.append(self.loss_calculator(X_tr, T_tr, loss_func))
+            tr_loss.append(current_tr_loss)
             tr_accuracy.append(self.accuracy_calculator(X_tr, T_tr))
 
 
-        print(f"Early stopping at epoch: {current_epoch}" if patience_index == 0 else "Max epoch reached")
+        print(f"Early stopping at epoch: {current_epoch}" if patience_index == 0 else f"Max epoch reached ({max_epochs})")
 
         if X_vl is not None:
             self.layers = copy.deepcopy(best_model_weights)
+        
+        self.best_epoch = best_epoch if X_vl is not None else current_epoch
 
         self.hidden_layers = self.layers[:-1]
         self.output_layer = self.layers[-1]
@@ -437,10 +470,10 @@ class NeuralNetwork:
             if fig_loss is not None:
                 fig_loss.subplots_adjust(hspace=0.5)
                 fig_loss.savefig(f'../../plots/{title}_loss.png', dpi=300)
+                plt.close(fig_loss)
             if self.output_activation.__name__ in ["sigmoid", "tanh"]:
                 fig_acc.subplots_adjust(hspace=0.5)
                 fig_acc.savefig(f'../../plots/{title}_accuracy.png', dpi=300)
+                plt.close(fig_acc)
             plt.tight_layout()
-            plt.show()
-        
-
+            # plt.show()
