@@ -327,6 +327,11 @@ class NeuralNetwork:
 
         if X_vl is not None:
             self.layers = copy.deepcopy(best_model_weights)
+            
+        if self.nesterov:
+            for layer in self.layers:
+                layer.weights -= self.momentum * layer.delta_weights_old
+                layer.biases -= self.momentum * layer.delta_biases_old
 
         self.hidden_layers = self.layers[:-1]
         self.output_layer = self.layers[-1]
