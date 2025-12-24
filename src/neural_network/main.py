@@ -4,15 +4,15 @@ from data_loader import data_loader
 from model_selection import model_assessment
 
 import matplotlib.pyplot as plt
+import numpy as np
 
-import random
 import time
 
 
 
 if __name__ == "__main__":
 
-    data = "MONK"
+    data = "MONKs"
     single_trial = False
 
     start = time.time()
@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     if data == "MONK":
         config = utils.load_config_json("../../config_files/MONK_config.json" if single_trial else "../../config_files/MONK_model_selection_config.json")
-        random.seed(config["general"]["seed"])
+        np.random.seed(config["general"]["seed"])
 
         monk_train_data = config["paths"]["train_data"]
         monk_test_data = config["paths"]["test_data"]
@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     else:
         config = utils.load_config_json("../../config_files/config.json" if single_trial else "../../config_files/model_selection_config.json")
-        random.seed(config["general"]["seed"])
+        np.random.seed(config["general"]["seed"])
 
         CUP_train_data = config["paths"]["train_data"]
         CUP_test_data = config["paths"]["test_data"]
@@ -78,16 +78,16 @@ if __name__ == "__main__":
 
         # utils.plot_dataset(X_train, T_train, X_CUP)
 
-        X_mean, X_std = utils.standardization(X_train)
-        T_mean, T_std = utils.standardization(T_train)
-        X_train = (X_train - X_mean) / X_std
-        T_train = (T_train - T_mean) / T_std
-        # X_CUP = (X_CUP - X_mean) / X_std              # remember to do the inverse at the end with "inverse_scaling"
+        # X_mean, X_std = utils.standardization(X_train)
+        # T_mean, T_std = utils.standardization(T_train)
+        # X_train = (X_train - X_mean) / X_std
+        # T_train = (T_train - T_mean) / T_std
+        # # X_CUP = (X_CUP - X_mean) / X_std              # remember to do the inverse at the end with "inverse_scaling"
 
-        # X_min, X_max = utils.scaling(X_train)
-        # T_min, T_max = utils.scaling(T_train)
-        # X_train = (X_train - X_min) / (X_max - X_min)
-        # T_train = (T_train - T_min) / (T_max - T_min)
+        X_min, X_max = utils.scaling(X_train)
+        T_min, T_max = utils.scaling(T_train)
+        X_train = (X_train - X_min) / (X_max - X_min)
+        T_train = (T_train - T_min) / (T_max - T_min)
         # X_CUP = (X_CUP - X_min) / (X_max - X_min)
 
         # utils.plot_correlation(X_train, T_train)

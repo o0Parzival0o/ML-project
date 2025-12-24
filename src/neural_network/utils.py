@@ -3,9 +3,7 @@ import numpy as np
 import seaborn as sns
 import pandas as pd
 
-import random
 import json
-import os
 
 def load_config_json(filepath):
     """Loads the configuration from the specified JSON file."""
@@ -18,22 +16,22 @@ def create_extractor(method):
     range = 1.4
     if(method == "random"):
         def random_extractor(fan_in=None, fan_out=None, a=None):
-            return random.uniform(-range/2, range/2)
+            return np.random.uniform(-range/2, range/2)
         return random_extractor
     elif(method == "fan_in"):   # Micheli (Slide NN-part2 n.12) 
         def fanin_extractor(fan_in=None, fan_out=None, a=None):
             bound = range * 2. / fan_in
-            return random.uniform(-bound, bound)
+            return np.random.uniform(-bound, bound)
         return fanin_extractor
     elif(method == "xavier"):   # sigmoid/tanh
         def xavier_extractor(fan_in=None, fan_out=None, a=None):
-            bound = np.sqrt(6. / (fan_in - fan_out))
-            return random.uniform(-bound, bound)
+            bound = np.sqrt(6. / (fan_in + fan_out))
+            return np.random.uniform(-bound, bound)
         return xavier_extractor
     elif(method == "he"):   # ReLu
         def he_extractor(fan_in=None, fan_out=None, a=None):
             bound = np.sqrt(6. / (fan_in * (1 + a**2)))
-            return random.gauss(-bound, bound)
+            return np.random.uniform(-bound, bound)
         return he_extractor
     else:
         raise ValueError("Invalid method.")
