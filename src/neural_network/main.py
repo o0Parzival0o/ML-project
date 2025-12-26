@@ -64,7 +64,8 @@ if __name__ == "__main__":
         else:
             training_sets = [X_train, T_train]
             test_sets = [X_test, T_test]
-            model_assessment(training_sets,input_units, config, test_sets)
+            nn, _, _ = model_assessment(training_sets,input_units, config, test_sets)
+            nn.save_model("../../model_saved/MONK_model.pkl")
 
 
     else:
@@ -128,7 +129,8 @@ if __name__ == "__main__":
         
         else:
             training_sets = [X_train, T_train]
-            model_assessment(training_sets, input_units, config)
+            nn, _, _ = model_assessment(training_sets, input_units, config)
+            nn.save_model("../../model_saved/MONK_model.pkl")
 
 
     end = time.time() - start

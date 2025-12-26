@@ -1,9 +1,10 @@
-from utils import plot_network # (da eliminare prima di mandare a Micheli)
+from network_plot import plot_network # (da eliminare prima di mandare a Micheli)
 import activations as actfun
 import losses
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pickle
 import copy
 
 np.random.seed(42)
@@ -36,7 +37,7 @@ class NeuronLayer:
 
 class NeuralNetwork:
     """ Represents a multi-layer perceptron neural network. """
-    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar, extractor, activation=[["relu", 0.], ["sigmoid", 1.]]):
+    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar=None, extractor=None, activation=[["relu", 0.], ["sigmoid", 1.]]):
         self.extractor = extractor
         self.hidden_activation = actfun.activation_functions[activation[0][0]][0]
         self.d_hidden_activation = actfun.activation_functions[activation[0][0]][1]
@@ -90,10 +91,14 @@ class NeuralNetwork:
         self.nesterov = training_hyperpar["nesterov"]
         self.regularization = training_hyperpar["regularization"]
 
+        self.loss_func = None
         self.tr_loss = None
         self.tr_accuracy = None
         self.vl_loss = None
         self.vl_accuracy = None
+        self.best_epoch = None
+        self.best_loss = None
+        self.best_accuracy = None
 
 
     def init_weights(self, layer, num_inputs, num_outputs):
@@ -195,23 +200,25 @@ class NeuralNetwork:
         if X_vl is not None:
             best_model_weights = copy.deepcopy(self.layers)
 
-        loss_func = losses.losses_functions[loss_func]
+        self.loss_func = losses.losses_functions[loss_func]
         tr_loss = []
         tr_accuracy = []
         vl_loss = []
         vl_accuracy = []
 
-        tr_loss.append(self.loss_calculator(X_tr, T_tr, loss_func))                 # loss 0: with random parameters
+        tr_loss.append(self.loss_calculator(X_tr, T_tr))                 # loss 0: with random parameters
         tr_accuracy.append(self.accuracy_calculator(X_tr, T_tr))
 
         if X_vl is not None:
-            vl_loss.append(self.loss_calculator(X_vl, T_vl, loss_func)) 
+            vl_loss.append(self.loss_calculator(X_vl, T_vl)) 
             vl_accuracy.append(self.accuracy_calculator(X_vl, T_vl))
         
 
         current_epoch = 0
         patience_index = patience
         best_epoch = 0
+        best_loss = None
+        best_accuracy = None
         while current_epoch < max_epochs and (patience_index > 0 if early_stopping_cond else True):
             
             self.learning_rate = self.orig_learning_rate / (1 + self.decay_factor * current_epoch) if self.learning_rate > self.min_learning_rate else self.learning_rate
@@ -322,9 +329,10 @@ class NeuralNetwork:
             else:
                 raise TypeError('batch_size is not positive int or "full".')
 
-            current_tr_loss = self.loss_calculator(X_tr, T_tr, loss_func)
+            current_tr_loss = self.loss_calculator(X_tr, T_tr)
+            current_tr_accuracy = self.accuracy_calculator(X_tr, T_tr)
             if X_vl is not None:
-                current_vl_loss = self.loss_calculator(X_vl, T_vl, loss_func)
+                current_vl_loss = self.loss_calculator(X_vl, T_vl)
                 vl_loss.append(current_vl_loss)
                 current_vl_accuracy = self.accuracy_calculator(X_vl, T_vl)
                 vl_accuracy.append(current_vl_accuracy)
@@ -335,10 +343,12 @@ class NeuralNetwork:
 
             elif early_stopping_cond and monitor == "val_loss":
 
-                if current_vl_loss < current_tr_loss or current_vl_loss <= np.min(vl_loss[:-1]) * (1 - epsilon_down):
+                if current_vl_loss <= np.min(vl_loss[:-1]) * (1 - epsilon_down):
                     patience_index = patience
                     best_model_weights = copy.deepcopy(self.layers)
                     best_epoch = current_epoch
+                    best_loss = current_vl_loss
+                    best_accuracy = current_vl_accuracy
 
                 else:
                     patience_index -= 1
@@ -349,6 +359,8 @@ class NeuralNetwork:
                     patience_index = patience
                     best_model_weights = copy.deepcopy(self.layers)
                     best_epoch = current_epoch
+                    best_loss = current_vl_loss
+                    best_accuracy = current_vl_accuracy
                 
                 else:
                     patience_index -= 1
@@ -362,8 +374,15 @@ class NeuralNetwork:
 
         if X_vl is not None:
             self.layers = copy.deepcopy(best_model_weights)
-        
-        self.best_epoch = best_epoch if X_vl is not None else current_epoch
+
+        if X_vl is not None:
+            self.best_epoch = best_epoch
+            self.best_loss = best_loss
+            self.best_accuracy = best_accuracy
+        else:
+            self.best_epoch = current_epoch
+            self.best_loss = current_tr_loss
+            self.best_accuracy = current_tr_accuracy
 
         self.hidden_layers = self.layers[:-1]
         self.output_layer = self.layers[-1]
@@ -374,9 +393,9 @@ class NeuralNetwork:
             self.vl_loss = vl_loss
             self.vl_accuracy = vl_accuracy
     
-    def loss_calculator(self, X, T, loss_func):
+    def loss_calculator(self, X, T):
         predictions = np.array([self.feed_forward(x) for x in X])
-        loss = loss_func(predictions, T)
+        loss = self.loss_func(predictions, T)
         return loss
     
     def accuracy_calculator(self, X, T):
@@ -385,7 +404,7 @@ class NeuralNetwork:
         correct_predict = 0
         for x,t in zip(X,T):
             predictions = self.feed_forward(x)
-            if (self.output_activation.__name__ == "sigmoid" and (predictions >= 0.5 and t == 1 or predictions < 0.5 and t == 0)) or (self.output_activation.__name__ == "tanh" and (predictions >= 0. and t == 1 or predictions < 0. and t == 0)):
+            if (self.output_activation.__name__ == "sigmoid" and ((predictions >= 0.5 and t == 1) or (predictions < 0.5 and t == 0))) or (self.output_activation.__name__ == "tanh" and ((predictions >= 0. and t == 1) or (predictions < 0. and t == 0))):
                 correct_predict += 1
         accuracy = correct_predict / len(T)
         return accuracy
@@ -418,11 +437,11 @@ class NeuralNetwork:
             if plot_index % cols == 0:
                 ax_loss.set_ylabel("Loss / Validation loss" if self.vl_loss is not None else "Loss")
 
-            if self.vl_loss is not None:
+            if self.best_loss is not None:
                 if title == "best_model":
-                    ax_loss.set_title(f"Best model (VL: {self.vl_loss[-1]:.4f})", fontsize=8, fontweight='bold')
+                    ax_loss.set_title(f"Best model (VL: {self.best_loss:.4f})", fontsize=8, fontweight='bold')
                 else:
-                    ax_loss.set_title(f"Trial {plot_index+1} (VL: {self.vl_loss[-1]:.4f})", fontsize=8, fontweight='bold')
+                    ax_loss.set_title(f"Trial {plot_index+1} (VL: {self.best_loss:.4f})", fontsize=8, fontweight='bold')
             else:
                 if title == "best_model":
                     ax_loss.set_title(f"Retraining", fontsize=8, fontweight='bold')
@@ -452,8 +471,8 @@ class NeuralNetwork:
                 ax_acc.set_ylabel("Accuracy / Validation accuracy" if self.vl_accuracy is not None else "Accuracy")
 
             if self.output_activation.__name__ in ["sigmoid", "tanh"]:
-                if self.vl_accuracy is not None and len(self.vl_accuracy) > 0:
-                    val_acc_text = f"{self.vl_accuracy[-1]:.2%}"
+                if self.best_accuracy is not None:
+                    val_acc_text = f"{self.best_accuracy:.2%}"
                 else:
                     val_acc_text = "N/A"
 
@@ -481,3 +500,25 @@ class NeuralNetwork:
                 plt.close(fig_acc)
             plt.tight_layout()
             # plt.show()
+
+    def save_model(self, filepath):
+        model_config = {
+            "architecture": {
+                "input_units": self.num_inputs,
+                "output_units": self.num_outputs,
+                "neurons_per_layer": self.neurons_per_layer
+            },
+            "functions": {
+                "hidden": self.hidden_activation.__name__,
+                "hidden_param": self.hidden_activation_param,
+                "output": self.output_activation.__name__,
+                "output_param": self.output_activation_param
+            },
+            "layers": [{
+                "weights": layer.weights,
+                "biases": layer.biases
+            } for layer in self.layers]
+        }
+
+        with open(filepath, "wb") as file:
+            pickle.dump(model_config, file)

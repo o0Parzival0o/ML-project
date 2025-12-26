@@ -13,7 +13,7 @@
   "training": {
       "epochs": 5000,
       "search_type": "random",
-      "number_random_trials": 16,
+      "number_random_trials": 4,
       "learning_rate": {
           "eta": [0.01,0.001],
           "min_rate": 100,
@@ -51,8 +51,8 @@
       "method": "fan_in"
   },
   "paths": {
-      "train_data": "../../MONK files/monks-2.train",
-      "test_data": "../../MONK files/monks-2.test"
+      "train_data": "../../MONK files/monks-1.train",
+      "test_data": "../../MONK files/monks-1.test"
   },
   "general": {
       "seed": 42

@@ -41,7 +41,7 @@ def model_assessment(training_sets, input_units, config, test_sets=None):
         print(f"Average {num_folds}-fold test risk: {avg_risk:.6f} ± {std_risk:.6f}")
         if avg_accuracy is not None:
             print(f"Average {num_folds}-fold test accuracy: {avg_accuracy:.2%} ± {std_accuracy:.2%}\n")
-        return avg_risk, avg_accuracy
+        return final_model, avg_risk, avg_accuracy
     
 
 def perform_search(X_train, T_train, input_units, config):
@@ -270,8 +270,8 @@ def launch_trial(conf, train_set, val_set, input_units, verbose=True):
     
     nn.train(X_train, T_train, X_val, T_val, train_args=train_args, loss_func=loss_func, early_stopping=early_stopping)
 
-    best_vl_loss = nn.loss_calculator(X_val, T_val, losses.losses_functions[loss_func])                             # TODO rivedere perche non è uguale
-    best_vl_accuracy = nn.accuracy_calculator(X_val, T_val)
+    best_vl_loss = nn.best_loss
+    best_vl_accuracy = nn.best_accuracy
     if verbose:
         print(f"Best validation loss for this run: {best_vl_loss:.6f}\n")
 
@@ -307,6 +307,8 @@ def model_selection(trial_config, X_train, T_train, input_units):
     
 
 def train_final_model(config, X_train, T_train, input_units, epochs=None):
+    print("Retrain:")
+
     output_units = config["architecture"]["output_units"]
     neurons_per_layer = config["architecture"]["neurons_per_layer"]
     hidden_act_func = config["functions"]["hidden"]
@@ -331,6 +333,10 @@ def train_final_model(config, X_train, T_train, input_units, epochs=None):
     
     nn.train(X_train, T_train, X_vl=None, T_vl=None, train_args=train_args,
              loss_func=loss_func, early_stopping={"enabled": False})
+    
+    print(f"Loss: {nn.best_loss:.6f}")
+    if nn.best_accuracy is not None:
+        print(f"(accuracy: {nn.best_accuracy:.2%})\n")
 
     fig_loss = plt.figure(figsize=(5, 4))
     fig_acc = plt.figure(figsize=(5, 4))
@@ -339,10 +345,10 @@ def train_final_model(config, X_train, T_train, input_units, epochs=None):
     return nn
 
 
-def evaluate_model(nn : NeuralNetwork, test_set, loss_func):
+def evaluate_model(nn : NeuralNetwork, test_set):
     X_test, T_test = test_set
     predictions = np.array([nn.feed_forward(x) for x in X_test])
-    risk = nn.loss_calculator(X_test, T_test, loss_func)
+    risk = nn.loss_calculator(X_test, T_test)
     accuracy_risk = nn.accuracy_calculator(X_test, T_test)
     return risk, accuracy_risk, predictions
 
@@ -362,8 +368,7 @@ def hold_out_assessment(config, input_units, train_set, test_set):
     final_model = train_final_model(best_config, X_training, T_training, input_units, epochs=best_nn.best_epoch)
 
     # model assessment
-    loss_func = losses.losses_functions[config["functions"]["loss"]]
-    risk, accuracy_risk, _ = evaluate_model(final_model, test_set, loss_func)
+    risk, accuracy_risk, _ = evaluate_model(final_model, test_set)
 
     return final_model, risk, accuracy_risk
 
@@ -436,8 +441,7 @@ def k_fold_assessment(k, config, input_units, train_set):
         final_model = train_final_model(best_config, X_train_k, T_train_k, input_units, epochs=best_nn.best_epoch)
 
         # assessment
-        loss_func = losses.losses_functions[config["functions"]["loss"]]
-        risk, accuracy, _ = evaluate_model(final_model, [X_test_k, T_test_k], loss_func)
+        risk, accuracy, _ = evaluate_model(final_model, [X_test_k, T_test_k])
 
         print(f"Risk: {risk:.6f}")
         if accuracy is not None:
