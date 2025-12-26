@@ -223,28 +223,28 @@ class NeuralNetwork:
                     layer.weights_grad_acc = np.zeros_like(layer.weights)
                     layer.biases_grad_acc = np.zeros_like(layer.biases)
             
+                if self.nesterov:
+                    real_weights = [layer.weights.copy() for layer in self.layers]
+                    real_biases = [layer.biases.copy() for layer in self.layers]
+                    
+                    for layer in self.layers:
+                        layer.weights += self.momentum * layer.delta_weights_old
+                        layer.biases += self.momentum * layer.delta_biases_old
+
                 #iterate on each pattern of and backprop
                 for x,t in zip(X_tr, T_tr):
-
-                    if self.nesterov:
-                        real_weights = [layer.weights.copy() for layer in self.layers]
-                        real_biases = [layer.biases.copy() for layer in self.layers]
-                        for layer in self.layers:
-                            layer.weights += self.momentum * layer.delta_weights_old
-                            layer.biases += self.momentum * layer.delta_biases_old
-
                     self.feed_forward(x)
                     self.back_prop(t)
-
-                    if self.nesterov:
-                        for layer, real_w, real_b in zip(self.layers, real_weights, real_biases):
-                            layer.weights = real_w
-                            layer.biases = real_b
 
                     #accumulate gradient
                     for layer in self.layers:
                         layer.weights_grad_acc += np.outer(layer.bp_deltas, layer.inputs)
                         layer.biases_grad_acc += layer.bp_deltas
+                
+                if self.nesterov:
+                    for layer, real_w, real_b in zip(self.layers, real_weights, real_biases):
+                        layer.weights = real_w
+                        layer.biases = real_b
 
                 self.weights_update(len(X_tr))
 
@@ -257,11 +257,10 @@ class NeuralNetwork:
                     for layer in self.layers: 
                         layer.weights_grad_acc = np.zeros_like(layer.weights)
                         layer.biases_grad_acc = np.zeros_like(layer.biases)
-
+                    
                     counter = 0
                     for x,t in zip(X_tr,T_tr):
-
-                        if self.nesterov:
+                        if counter == 0 and self.nesterov:
                             real_weights = [layer.weights.copy() for layer in self.layers]
                             real_biases = [layer.biases.copy() for layer in self.layers]
                             for layer in self.layers:
@@ -271,27 +270,32 @@ class NeuralNetwork:
                         self.feed_forward(x)
                         self.back_prop(t)
 
-                        if self.nesterov:
-                            for layer, real_w, real_b in zip(self.layers, real_weights, real_biases):
-                                layer.weights = real_w
-                                layer.biases = real_b
-
                         #using a counter manages the istances if dataset ends before batch size is reached
                         counter += 1
 
                         for layer in self.layers:
                             layer.weights_grad_acc += np.outer(layer.bp_deltas, layer.inputs)
-                            layer.biases_grad_acc += layer.bp_deltas
-
+                            layer.biases_grad_acc += layer.bp_deltas 
+                        
                         if counter == batch_size:
+                            if self.nesterov:
+                                for layer, real_w, real_b in zip(self.layers, real_weights, real_biases):
+                                    layer.weights = real_w
+                                    layer.biases = real_b
+
                             self.weights_update(counter)
                             for layer in self.layers: 
                                 layer.weights_grad_acc = np.zeros_like(layer.weights)
                                 layer.biases_grad_acc = np.zeros_like(layer.biases)
-                            counter = 0
+                            counter = 0 
 
                     #flush update if necessary
                     if counter != 0 and not batch_droplast:
+                        if self.nesterov:
+                            for layer, real_w, real_b in zip(self.layers, real_weights, real_biases):
+                                layer.weights = real_w
+                                layer.biases = real_b
+                        
                         self.weights_update(counter)
 
                 elif batch_size == 1: 
