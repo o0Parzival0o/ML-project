@@ -37,7 +37,7 @@ class NeuronLayer:
 
 class NeuralNetwork:
     """ Represents a multi-layer perceptron neural network. """
-    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar=None, extractor=None, activation=[["relu", 0.], ["sigmoid", 1.]]):
+    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar=None, extractor=None, activation=[["relu", 0.], ["sigmoid", 1.]],loaded_layers=None):
         self.extractor = extractor
         self.hidden_activation = actfun.activation_functions[activation[0][0]][0]
         self.d_hidden_activation = actfun.activation_functions[activation[0][0]][1]
@@ -53,30 +53,37 @@ class NeuralNetwork:
 
         #TODO più in la col training valutare se ha senso accorpare hidden layers con input e output in un unica struttura layers
 
-        self.hidden_layers = []
-        self.output_layer = []
+        if loaded_layers is not None:
+            self.layers = loaded_layers
+            # Separate the hidden layers from the output layer
+            self.hidden_layers = self.layers[:-1]
+            self.output_layer = self.layers[-1]
+        else:
 
-        # initialize hidden neuron and weights in a loop
-        for i in range(self.hidden_layers_number):
-            num_neurons = self.neurons_per_layer[i]
-            #only hidden weights number can be chosen
-            num_inputs = self.num_inputs if i == 0 else self.neurons_per_layer[i-1]
+            self.hidden_layers = []
+            self.output_layer = []
 
-            hidden_layer = NeuronLayer(num_neurons)
-            self.init_weights(hidden_layer, num_inputs, self.neurons_per_layer[i])
-            self.hidden_layers.append(hidden_layer)
+            # initialize hidden neuron and weights in a loop
+            for i in range(self.hidden_layers_number):
+                num_neurons = self.neurons_per_layer[i]
+                #only hidden weights number can be chosen
+                num_inputs = self.num_inputs if i == 0 else self.neurons_per_layer[i-1]
 
-            hidden_layer.weights = np.array([neuron.weights for neuron in hidden_layer.neurons])
-            hidden_layer.biases = np.array([neuron.bias for neuron in hidden_layer.neurons])
+                hidden_layer = NeuronLayer(num_neurons)
+                self.init_weights(hidden_layer, num_inputs, self.neurons_per_layer[i])
+                self.hidden_layers.append(hidden_layer)
 
-        # initialize output neuron and weights
-        self.output_layer = NeuronLayer(num_outputs)
-        self.init_weights(self.output_layer, self.hidden_layers[-1].num_neurons, num_outputs)
+                hidden_layer.weights = np.array([neuron.weights for neuron in hidden_layer.neurons])
+                hidden_layer.biases = np.array([neuron.bias for neuron in hidden_layer.neurons])
 
-        self.output_layer.weights = np.array([neuron.weights for neuron in self.output_layer.neurons])
-        self.output_layer.biases = np.array([neuron.bias for neuron in self.output_layer.neurons])
+            # initialize output neuron and weights
+            self.output_layer = NeuronLayer(num_outputs)
+            self.init_weights(self.output_layer, self.hidden_layers[-1].num_neurons, num_outputs)
 
-        self.layers = self.hidden_layers + [self.output_layer]
+            self.output_layer.weights = np.array([neuron.weights for neuron in self.output_layer.neurons])
+            self.output_layer.biases = np.array([neuron.bias for neuron in self.output_layer.neurons])
+
+            self.layers = self.hidden_layers + [self.output_layer]
 
         for layer in self.layers:
             layer.delta_weights_old = np.zeros_like(layer.weights)
@@ -209,7 +216,15 @@ class NeuralNetwork:
         tr_loss.append(self.loss_calculator(X_tr, T_tr))                 # loss 0: with random parameters
         tr_accuracy.append(self.accuracy_calculator(X_tr, T_tr))
 
+        best_loss = None
+        best_accuracy = None
         if X_vl is not None:
+            init_vl_loss = self.loss_calculator(X_vl, T_vl)
+            init_vl_acc = self.accuracy_calculator(X_vl, T_vl)
+
+            best_loss = init_vl_loss
+            best_accuracy = init_vl_acc
+
             vl_loss.append(self.loss_calculator(X_vl, T_vl)) 
             vl_accuracy.append(self.accuracy_calculator(X_vl, T_vl))
         
@@ -217,8 +232,7 @@ class NeuralNetwork:
         current_epoch = 0
         patience_index = patience
         best_epoch = 0
-        best_loss = None
-        best_accuracy = None
+        
         while current_epoch < max_epochs and (patience_index > 0 if early_stopping_cond else True):
             
             self.learning_rate = self.orig_learning_rate / (1 + self.decay_factor * current_epoch) if self.learning_rate > self.min_learning_rate else self.learning_rate
@@ -522,3 +536,61 @@ class NeuralNetwork:
 
         with open(filepath, "wb") as file:
             pickle.dump(model_config, file)
+        for layer in self.layers:
+            print(layer.weights)
+        
+
+    @classmethod
+    def reconstruct_layer(cls,weights, biases):
+
+        num_neurons = len(biases)
+        
+        layer = NeuronLayer(num_neurons)
+
+        layer.weights = weights
+        layer.biases = biases
+
+        for i, neuron in enumerate(layer.neurons):
+            neuron.bias = biases[i]
+            neuron.weights = list(weights[i]) 
+
+        
+        return layer
+
+    @classmethod
+    def load_model(cls,filepath):
+        with open(filepath, "rb") as file:
+            config = pickle.load(file)
+
+        num_inputs = config["architecture"]["input_units"]
+        num_outputs = config["architecture"]["output_units"]
+        nns_per_layer = config["architecture"]["neurons_per_layer"]
+
+        hidden_fun = actfun.activation_functions[config["function"]["hidden"]]
+        hidden_param = config["function"]["hidden_param"]
+        output_fun = actfun.activation_functions[config["function"]["output"]]
+        output_param = config["function"]["output_param"]
+
+        activation_config = [[hidden_fun,hidden_param],[output_fun,output_param]]
+
+        loaded_layers = []
+        for layer in config["layers"]:
+            weights = layer["weights"]
+            biases = layer["biases"]
+        layer = cls.reconstruct_layer(weights, biases)
+        loaded_layers.append(layer)
+
+        loaded_model = cls(
+        num_inputs=num_inputs,
+        num_outputs=num_outputs,
+        neurons_per_layer=nns_per_layer,
+        training_hyperpar=None, 
+        extractor=None,
+        activation=activation_config,
+        loaded_layers=loaded_layers 
+        )
+        
+        return loaded_model
+
+
+

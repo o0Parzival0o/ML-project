@@ -101,7 +101,7 @@ def grid_search(X_training, T_training, input_units, config):
     fig_acc = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
 
     # run all the possible trial
-    best_vl_loss = None
+    best_vl_loss = float("inf")
     best_trial_idx = None
     nn_list = []
     for i, trial in enumerate(trials):
@@ -110,7 +110,11 @@ def grid_search(X_training, T_training, input_units, config):
         nn, loss, accuracy = model_selection(trial, X_training, T_training, input_units)
         nn_list.append(nn)
 
-        if best_vl_loss is None or loss < best_vl_loss:
+        if loss == None:
+            print("loss nulla")
+        if (best_vl_loss == None):
+            print("best vl loss nulla")
+        if loss < best_vl_loss:
             best_vl_loss = loss
             best_trial_idx = i
             print(f"Loss: {loss:.6f}")
@@ -208,7 +212,7 @@ def random_search(X_training, T_training, input_units, config):
     fig_acc = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
 
     # run all the possible trial
-    best_vl_loss = None
+    best_vl_loss = float("inf")
     best_trial_idx = None
     nn_list = []
     for i, trial in enumerate(trials):
@@ -217,7 +221,11 @@ def random_search(X_training, T_training, input_units, config):
         nn, loss, accuracy = model_selection(trial, X_training, T_training, input_units)
         nn_list.append(nn)
 
-        if best_vl_loss is None or loss < best_vl_loss:
+        if loss == None:
+            print("loss nulla")
+        if (best_vl_loss == None):
+            print("best vl loss nulla")
+        if loss < best_vl_loss:
             best_vl_loss = loss
             best_trial_idx = i
             print(f"Loss: {loss:.6f}")

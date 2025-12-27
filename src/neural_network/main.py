@@ -12,7 +12,7 @@ import time
 
 if __name__ == "__main__":
 
-    data = "MONKs"
+    data = "MONK"
     single_trial = False
 
     start = time.time()

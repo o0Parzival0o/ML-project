@@ -13,9 +13,9 @@
   "training": {
       "epochs": 5000,
       "search_type": "random",
-      "number_random_trials": 4,
+      "number_random_trials": 16,
       "learning_rate": {
-          "eta": [0.01,0.001],
+          "eta": [0.05,0.001],
           "min_rate": 100,
           "decay_factor": 0.00001
       },
@@ -40,7 +40,7 @@
       }
   },
     "validation": {
-        "method": "hold_out",
+        "method": "k_fold_cv",
         "folds": 5
   },
     "assessment": {
@@ -51,8 +51,8 @@
       "method": "fan_in"
   },
   "paths": {
-      "train_data": "../../MONK files/monks-1.train",
-      "test_data": "../../MONK files/monks-1.test"
+      "train_data": "../../MONK files/monks-3.train",
+      "test_data": "../../MONK files/monks-3.test"
   },
   "general": {
       "seed": 42
