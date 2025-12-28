@@ -105,6 +105,7 @@ def grid_search(X_training, T_training, input_units, config):
 
     # run all the possible trial
     best_vl_loss = float("inf")
+    best_vl_loss = float("inf")
     best_trial_idx = None
     nn_list = []
     for i, trial in enumerate(trials):
@@ -215,6 +216,7 @@ def random_search(X_training, T_training, input_units, config):
     fig_acc = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
 
     # run all the possible trial
+    best_vl_loss = float("inf")
     best_vl_loss = float("inf")
     best_trial_idx = None
     nn_list = []

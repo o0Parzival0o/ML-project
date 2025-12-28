@@ -37,7 +37,7 @@ class NeuronLayer:
 
 class NeuralNetwork:
     """ Represents a multi-layer perceptron neural network. """
-    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar=None, extractor=None, activation=[["relu", 0.], ["sigmoid", 1.]]):
+    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar=None, extractor=None, activation=[["relu", 0.], ["sigmoid", 1.]],loaded_layers=None):
         self.extractor = extractor
         self.hidden_activation = actfun.activation_functions[activation[0][0]][0]
         self.d_hidden_activation = actfun.activation_functions[activation[0][0]][1]
@@ -53,14 +53,21 @@ class NeuralNetwork:
 
         #TODO più in la col training valutare se ha senso accorpare hidden layers con input e output in un unica struttura layers
 
-        self.hidden_layers = []
-        self.output_layer = []
+        if loaded_layers is not None:
+            self.layers = loaded_layers
+            # Separate the hidden layers from the output layer
+            self.hidden_layers = self.layers[:-1]
+            self.output_layer = self.layers[-1]
+        else:
 
-        # initialize hidden neuron and weights in a loop
-        for i in range(self.hidden_layers_number):
-            num_neurons = self.neurons_per_layer[i]
-            #only hidden weights number can be chosen
-            num_inputs = self.num_inputs if i == 0 else self.neurons_per_layer[i-1]
+            self.hidden_layers = []
+            self.output_layer = []
+
+            # initialize hidden neuron and weights in a loop
+            for i in range(self.hidden_layers_number):
+                num_neurons = self.neurons_per_layer[i]
+                #only hidden weights number can be chosen
+                num_inputs = self.num_inputs if i == 0 else self.neurons_per_layer[i-1]
 
             hidden_layer = NeuronLayer(num_neurons)
             if self.extractor is not None:
@@ -84,7 +91,7 @@ class NeuralNetwork:
             self.output_layer.weights = np.empty((num_outputs, last_hidden_size))
             self.output_layer.biases = np.empty(num_outputs)
 
-        self.layers = self.hidden_layers + [self.output_layer]
+            self.layers = self.hidden_layers + [self.output_layer]
 
         for layer in self.layers:
             layer.delta_weights_old = np.zeros_like(layer.weights)
