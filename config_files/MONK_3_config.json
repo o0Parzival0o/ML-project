@@ -4,7 +4,7 @@
       "neurons_per_layer": [3]
   },
   "functions": {
-      "hidden": "tanh",
+      "hidden": "relu",
       "hidden_param": 1.0,
       "output": "sigmoid",
       "output_param": 1.0,
@@ -43,8 +43,8 @@
       "method": "xavier"
   },
   "paths": {
-      "train_data": "../../MONK files/monks-1.train",
-      "test_data": "../../MONK files/monks-1.test"
+      "train_data": "../../MONK files/monks-3.train",
+      "test_data": "../../MONK files/monks-3.test"
   },
   "general": {
       "seed": 42

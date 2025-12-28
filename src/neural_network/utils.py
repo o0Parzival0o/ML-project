@@ -7,6 +7,7 @@ import pandas as pd
 import pickle
 
 import json
+import datetime
 
 def load_config_json(filepath):
     """Loads the configuration from the specified JSON file."""
@@ -160,7 +161,7 @@ def plot_correlation(X, T):
     sns.heatmap(corr_features, annot=True, fmt='.2f', cmap='coolwarm', center=0, vmin=-1, vmax=1, square=True)
     plt.title('Correlation Matrix - Features', fontsize=16, fontweight='bold')
     plt.tight_layout()
-    plt.savefig('../../plots/features_correlation.png', dpi=300)
+    plt.savefig('../../plots/data_correlation/features_correlation.png', dpi=300)
     plt.show()
 
     df_T = pd.DataFrame(T, columns=target_names)
@@ -175,7 +176,7 @@ def plot_correlation(X, T):
     sns.heatmap(corr_feat_target, annot=True, fmt='.2f', cmap='coolwarm', center=0, vmin=-1, vmax=1)
     plt.title('Correlation: Features - Targets', fontsize=16, fontweight='bold')
     plt.tight_layout()
-    plt.savefig('../../plots/features_target_correlation.png', dpi=300, bbox_inches='tight')
+    plt.savefig('../../plots/data_correlation/features_target_correlation.png', dpi=300, bbox_inches='tight')
     plt.show()
     
     return corr_features, corr_feat_target
@@ -200,14 +201,36 @@ def neural_network_from_file(file_path):
     with open(file_path, "rb") as file:
         config = pickle.load(file)
 
-    hidden_act_func = [config["hidden_activation"], config["hidden_activation_param"]]
-    output_act_func = [config["output_activation"], config["output_activation_param"]]
+    hidden_act_func = [config["functions"]["hidden"], config["functions"]["hidden_param"]]
+    output_act_func = [config["functions"]["output"], config["functions"]["output_param"]]
     act_func = [hidden_act_func, output_act_func]
 
-    nn = NeuralNetwork(num_inputs=config["input_units"], num_outputs=config["output_units"], neurons_per_layer=config["neurons_per_layer"], activation=act_func)
+    nn = NeuralNetwork(num_inputs=config["architecture"]["input_units"], num_outputs=config["architecture"]["output_units"], neurons_per_layer=config["architecture"]["neurons_per_layer"], activation=act_func)
 
     for layer, config_layer in zip(nn.layers, config["layers"]):
         layer.weights = config_layer["weights"]
         layer.biases = config_layer["biases"]
+
+        for i, neuron in enumerate(layer.neurons):
+            neuron.weights = config_layer["weights"][i].tolist()
+            neuron.bias = float(config_layer["biases"][i])
     
+    nn.hidden_layers = nn.layers[:-1]
+    nn.output_layer = nn.layers[-1]
+                
     return nn
+
+def save_predictions(filename, predictions, team_name, members):
+    date = datetime.datetime.now().strftime("%d/%m/%Y")
+
+    df = pd.DataFrame(predictions)
+    df.index += 1
+    df.reset_index(inplace=True)
+
+    with open(filename, 'w', newline='') as f:
+        f.write(f"# {members}\n")
+        f.write(f"# {team_name}\n")
+        f.write("# ML-CUP25\n")
+        f.write(f"# {date}\n")
+        df.to_csv(f, index=False, header=False)
+

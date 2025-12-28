@@ -11,7 +11,7 @@
       "loss": "MSE"
   },
   "training": {
-      "epochs": 5000,
+      "epochs": 1000,
       "search_type": "random",
       "number_random_trials": 4,
       "learning_rate": {

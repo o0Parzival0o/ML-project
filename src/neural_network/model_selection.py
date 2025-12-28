@@ -51,12 +51,15 @@ def perform_search(X_train, T_train, input_units, config):
         raise ValueError('"search_type" must be "grid" or "random"')
 
     if search_type == "grid":
-        best_config = grid_search(X_train, T_train, input_units, config)
+        best_config, best_nn, best_idx = grid_search(X_train, T_train, input_units, config)
 
     if search_type == "random":
-        best_config = random_search(X_train, T_train, input_units, config)
+        best_config, best_nn, best_idx = random_search(X_train, T_train, input_units, config)
 
-    return best_config
+    print(f"Miglior configurazione scelta: trial {best_idx + 1}")
+    print(f"{best_config}\n")
+
+    return best_config, best_nn
 
 
 def grid_search(X_training, T_training, input_units, config):
@@ -101,7 +104,7 @@ def grid_search(X_training, T_training, input_units, config):
     fig_acc = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
 
     # run all the possible trial
-    best_vl_loss = None
+    best_vl_loss = float("inf")
     best_trial_idx = None
     nn_list = []
     for i, trial in enumerate(trials):
@@ -110,7 +113,11 @@ def grid_search(X_training, T_training, input_units, config):
         nn, loss, accuracy = model_selection(trial, X_training, T_training, input_units)
         nn_list.append(nn)
 
-        if best_vl_loss is None or loss < best_vl_loss:
+        if loss is None:
+            print("Loss is None\n")
+            continue
+        
+        if loss < best_vl_loss:
             best_vl_loss = loss
             best_trial_idx = i
             print(f"Loss: {loss:.6f}")
@@ -127,7 +134,7 @@ def grid_search(X_training, T_training, input_units, config):
     best_config = trials[best_trial_idx]
     best_nn = nn_list[best_trial_idx]
 
-    return best_config, best_nn
+    return best_config, best_nn, best_trial_idx
 
 
 def random_search(X_training, T_training, input_units, config):
@@ -208,7 +215,7 @@ def random_search(X_training, T_training, input_units, config):
     fig_acc = plt.figure(figsize=(5 * n_cols, 4 * n_rows))
 
     # run all the possible trial
-    best_vl_loss = None
+    best_vl_loss = float("inf")
     best_trial_idx = None
     nn_list = []
     for i, trial in enumerate(trials):
@@ -217,7 +224,11 @@ def random_search(X_training, T_training, input_units, config):
         nn, loss, accuracy = model_selection(trial, X_training, T_training, input_units)
         nn_list.append(nn)
 
-        if best_vl_loss is None or loss < best_vl_loss:
+        if loss is None:
+            print("Loss is None\n")
+            continue
+
+        if loss < best_vl_loss:
             best_vl_loss = loss
             best_trial_idx = i
             print(f"Loss: {loss:.6f}")
@@ -234,7 +245,7 @@ def random_search(X_training, T_training, input_units, config):
     best_config = trials[best_trial_idx]
     best_nn = nn_list[best_trial_idx]
 
-    return best_config, best_nn
+    return best_config, best_nn, best_trial_idx
 
 
 def launch_trial(conf, train_set, val_set, input_units, verbose=True):

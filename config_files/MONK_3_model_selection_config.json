@@ -1,0 +1,60 @@
+{
+  "architecture": {
+      "output_units": 1,
+      "neurons_per_layer": [[2], [6]]
+  },
+  "functions": {
+      "hidden": "relu",
+      "hidden_param": 0.0,
+      "output": "sigmoid",
+      "output_param": 1.0,
+      "loss": "MSE"
+  },
+  "training": {
+      "epochs": 1000,
+      "search_type": "random",
+      "number_random_trials": 4,
+      "learning_rate": {
+          "eta": [0.01,0.001],
+          "min_rate": 100,
+          "decay_factor": 0.00001
+      },
+      "momentum": [0.35, 0.95],
+      "nesterov": true,
+      "regularization": [0.01, 0.000001],
+      "batch": {
+          "batch_size":"full",
+          "drop_last": false
+      },
+      "early_stopping": {
+          "enabled": true,
+          "patience": 50,
+          "monitor": "val_loss",
+          "epsilon_loss_down": 0.000001,
+          "epsilon_accuracy_up": 0.005
+      },
+      "splitting": {
+          "tr": 0.75,
+          "vl": 0.15,
+          "ts": 0.10
+      }
+  },
+    "validation": {
+        "method": "hold_out",
+        "folds": 5
+  },
+    "assessment": {
+        "method": "hold_out",
+        "folds": 5
+  },
+  "initialization": {
+      "method": "fan_in"
+  },
+  "paths": {
+      "train_data": "../../MONK files/monks-3.train",
+      "test_data": "../../MONK files/monks-3.test"
+  },
+  "general": {
+      "seed": 42
+  }
+}

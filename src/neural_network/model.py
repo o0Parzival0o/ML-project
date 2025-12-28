@@ -63,18 +63,26 @@ class NeuralNetwork:
             num_inputs = self.num_inputs if i == 0 else self.neurons_per_layer[i-1]
 
             hidden_layer = NeuronLayer(num_neurons)
-            self.init_weights(hidden_layer, num_inputs, self.neurons_per_layer[i])
-            self.hidden_layers.append(hidden_layer)
+            if self.extractor is not None:
+                self.init_weights(hidden_layer, num_inputs, self.neurons_per_layer[i])
+                hidden_layer.weights = np.array([neuron.weights for neuron in hidden_layer.neurons])
+                hidden_layer.biases = np.array([neuron.bias for neuron in hidden_layer.neurons])
+            else:
+                hidden_layer.weights = np.empty((num_neurons, num_inputs))
+                hidden_layer.biases = np.empty(num_neurons)
 
-            hidden_layer.weights = np.array([neuron.weights for neuron in hidden_layer.neurons])
-            hidden_layer.biases = np.array([neuron.bias for neuron in hidden_layer.neurons])
+            self.hidden_layers.append(hidden_layer)
 
         # initialize output neuron and weights
         self.output_layer = NeuronLayer(num_outputs)
-        self.init_weights(self.output_layer, self.hidden_layers[-1].num_neurons, num_outputs)
-
-        self.output_layer.weights = np.array([neuron.weights for neuron in self.output_layer.neurons])
-        self.output_layer.biases = np.array([neuron.bias for neuron in self.output_layer.neurons])
+        if self.extractor is not None:
+            self.init_weights(self.output_layer, self.hidden_layers[-1].num_neurons, num_outputs)
+            self.output_layer.weights = np.array([neuron.weights for neuron in self.output_layer.neurons])
+            self.output_layer.biases = np.array([neuron.bias for neuron in self.output_layer.neurons])
+        else:
+            last_hidden_size = self.hidden_layers[-1].num_neurons if self.hidden_layers else self.num_inputs
+            self.output_layer.weights = np.empty((num_outputs, last_hidden_size))
+            self.output_layer.biases = np.empty(num_outputs)
 
         self.layers = self.hidden_layers + [self.output_layer]
 
@@ -83,13 +91,14 @@ class NeuralNetwork:
             layer.delta_biases_old = np.zeros_like(layer.biases)
         
 
-        self.orig_learning_rate = training_hyperpar["learning_rate"]["eta"]
-        self.learning_rate = self.orig_learning_rate
-        self.min_learning_rate = self.orig_learning_rate / training_hyperpar["learning_rate"]["min_rate"]
-        self.decay_factor = training_hyperpar["learning_rate"]["decay_factor"]
-        self.momentum = training_hyperpar["momentum"]
-        self.nesterov = training_hyperpar["nesterov"]
-        self.regularization = training_hyperpar["regularization"]
+        if training_hyperpar is not None:
+            self.orig_learning_rate = training_hyperpar["learning_rate"]["eta"]
+            self.learning_rate = self.orig_learning_rate
+            self.min_learning_rate = self.orig_learning_rate / training_hyperpar["learning_rate"]["min_rate"]
+            self.decay_factor = training_hyperpar["learning_rate"]["decay_factor"]
+            self.momentum = training_hyperpar["momentum"]
+            self.nesterov = training_hyperpar["nesterov"]
+            self.regularization = training_hyperpar["regularization"]
 
         self.loss_func = None
         self.tr_loss = None
@@ -121,8 +130,8 @@ class NeuralNetwork:
             result.append(f'\t\t{neuron}:\t'+'\t'.join(f'{weight:.2f}' for weight in neuron.weights))
         return '\n'.join(result)
     
-    def plot(self): # (da eliminare prima di mandare a Micheli)
-        plot_network(self)
+    def plot(self, fig_name): # (da eliminare prima di mandare a Micheli)
+        plot_network(self, fig_name)
 
     def feed_forward(self, inputs):
         current_inputs = inputs
@@ -209,16 +218,23 @@ class NeuralNetwork:
         tr_loss.append(self.loss_calculator(X_tr, T_tr))                 # loss 0: with random parameters
         tr_accuracy.append(self.accuracy_calculator(X_tr, T_tr))
 
+        best_loss = None
+        best_accuracy = None
+
         if X_vl is not None:
-            vl_loss.append(self.loss_calculator(X_vl, T_vl)) 
-            vl_accuracy.append(self.accuracy_calculator(X_vl, T_vl))
+            init_vl_loss = self.loss_calculator(X_vl, T_vl)
+            init_vl_accuracy = self.accuracy_calculator(X_vl, T_vl)
+
+            best_loss = init_vl_loss
+            best_accuracy = init_vl_accuracy
+
+            vl_loss.append(init_vl_loss) 
+            vl_accuracy.append(init_vl_accuracy)
         
 
         current_epoch = 0
         patience_index = patience
         best_epoch = 0
-        best_loss = None
-        best_accuracy = None
         while current_epoch < max_epochs and (patience_index > 0 if early_stopping_cond else True):
             
             self.learning_rate = self.orig_learning_rate / (1 + self.decay_factor * current_epoch) if self.learning_rate > self.min_learning_rate else self.learning_rate
@@ -338,10 +354,7 @@ class NeuralNetwork:
                 vl_accuracy.append(current_vl_accuracy)
             
             #check if vl increases
-            if not early_stopping_cond:
-                pass
-
-            elif early_stopping_cond and monitor == "val_loss":
+            if early_stopping_cond and monitor == "val_loss":
 
                 if current_vl_loss <= np.min(vl_loss[:-1]) * (1 - epsilon_down):
                     patience_index = patience
@@ -417,8 +430,15 @@ class NeuralNetwork:
                 correct_predict += 1
         accuracy = correct_predict/len(T)
         print(f"The model obtained an accuracy of {accuracy:.2%} on test set")
+
+    def predict(self, X):
+        O = []
+        for x in X:
+            o = self.feed_forward(x)
+            O.append(o)
+        return np.array(O)
     
-    def plot_metrics(self, fig_loss=None, fig_acc=None, rows=1, cols=1, plot_index=0, changing_hyperpar=None, title=None):
+    def plot_metrics(self, fig_loss=None, fig_acc=None, rows=1, cols=1, plot_index=0, changing_hyperpar=None, title=None, data_type=None):
         
         if self.tr_loss is not None and fig_loss:
             ax_loss = fig_loss.add_subplot(rows, cols, plot_index + 1)
@@ -492,16 +512,19 @@ class NeuralNetwork:
         if plot_index == rows * cols - 1:
             if fig_loss is not None:
                 fig_loss.subplots_adjust(hspace=0.5)
-                fig_loss.savefig(f'../../plots/{title}_loss.png', dpi=300)
+                fig_loss.savefig(f'../../plots/{data_type}_{title}_loss.png', dpi=300)
                 plt.close(fig_loss)
             if self.output_activation.__name__ in ["sigmoid", "tanh"]:
                 fig_acc.subplots_adjust(hspace=0.5)
-                fig_acc.savefig(f'../../plots/{title}_accuracy.png', dpi=300)
+                fig_acc.savefig(f'../../plots/{data_type}_{title}_accuracy.png', dpi=300)
                 plt.close(fig_acc)
             plt.tight_layout()
             # plt.show()
 
     def save_model(self, filepath):
+
+        self.sync_layer_to_neurons()
+        
         model_config = {
             "architecture": {
                 "input_units": self.num_inputs,
@@ -522,3 +545,9 @@ class NeuralNetwork:
 
         with open(filepath, "wb") as file:
             pickle.dump(model_config, file)
+
+    def sync_layer_to_neurons(self):
+        for layer in self.layers:
+            for i, neuron in enumerate(layer.neurons):
+                neuron.weights = layer.weights[i].tolist()
+                neuron.bias = float(layer.biases[i])

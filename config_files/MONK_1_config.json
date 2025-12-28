@@ -1,0 +1,52 @@
+{
+  "architecture": {
+      "output_units": 1,
+      "neurons_per_layer": [3]
+  },
+  "functions": {
+      "hidden": "relu",
+      "hidden_param": 1.0,
+      "output": "sigmoid",
+      "output_param": 1.0,
+      "loss": "binary_crossentropy"
+  },
+  "training": {
+      "epochs": 5000,
+      "learning_rate": {
+          "eta": 0.01,
+          "min_rate": 100,
+          "decay_factor": 0.0001
+      },
+      "momentum": 0.85,
+      "nesterov": true,
+      "regularization": 0.0001,
+      "batch": {
+          "batch_size": "full",
+          "drop_last": true
+      },
+      "early_stopping": {
+          "enabled": true,
+          "patience": 10,
+          "monitor": "val_loss",
+          "epsilon_loss_up": 0.002,
+          "epsilon_loss_down": 0.001,
+          "epsilon_accuracy_up": 0.005,
+          "epsilon_accuracy_down": 0.01
+      },
+      "splitting": {
+          "tr": 0.75,
+          "vl": 0.25,
+          "ts": 0.00
+      }
+  },
+  "initialization": {
+      "method": "xavier"
+  },
+  "paths": {
+      "train_data": "../../MONK files/monks-1.train",
+      "test_data": "../../MONK files/monks-1.test"
+  },
+  "general": {
+      "seed": 42
+  }
+}

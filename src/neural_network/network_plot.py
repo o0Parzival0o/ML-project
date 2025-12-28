@@ -14,6 +14,7 @@ def gather_weights(nn):
 
 def plot_network(
     nn,
+    fig_name,
     figsize=(10, 6),
     weight_scaling=5.0,
     show_bias=True,
@@ -115,7 +116,7 @@ def plot_network(
     ax.set_title("Mappa dei pesi e dei bias", fontsize=13)
     plt.subplots_adjust(left=0.03, right=0.97, top=0.93, bottom=0.07)
     plt.tight_layout()
-    plt.savefig("plot.png")
+    plt.savefig(f'../../plots/{fig_name}_nn_plot.png', dpi=300)
 
 def plot_weight_histogram(nn, bins=40, figsize=(6,3)):
     all_w = gather_weights(nn)
