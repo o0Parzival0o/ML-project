@@ -31,7 +31,8 @@
           "patience": 50,
           "monitor": "val_loss",
           "epsilon_loss_down": 0.000001,
-          "epsilon_accuracy_up": 0.005
+          "epsilon_accuracy_up": 0.005,
+          "target_loss": 0.0
       },
       "splitting": {
           "tr": 0.75,
@@ -40,7 +41,7 @@
       }
   },
     "validation": {
-        "method": "hold_out",
+        "method": "k_fold_cv",
         "folds": 5
   },
     "assessment": {

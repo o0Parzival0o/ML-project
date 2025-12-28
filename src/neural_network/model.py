@@ -37,7 +37,7 @@ class NeuronLayer:
 
 class NeuralNetwork:
     """ Represents a multi-layer perceptron neural network. """
-    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar=None, extractor=None, activation=[["relu", 0.], ["sigmoid", 1.]],loaded_layers=None):
+    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar=None, extractor=None, activation=[["relu", 0.], ["sigmoid", 1.]]):
         self.extractor = extractor
         self.hidden_activation = actfun.activation_functions[activation[0][0]][0]
         self.d_hidden_activation = actfun.activation_functions[activation[0][0]][1]
@@ -53,21 +53,14 @@ class NeuralNetwork:
 
         #TODO più in la col training valutare se ha senso accorpare hidden layers con input e output in un unica struttura layers
 
-        if loaded_layers is not None:
-            self.layers = loaded_layers
-            # Separate the hidden layers from the output layer
-            self.hidden_layers = self.layers[:-1]
-            self.output_layer = self.layers[-1]
-        else:
+        self.hidden_layers = []
+        self.output_layer = []
 
-            self.hidden_layers = []
-            self.output_layer = []
-
-            # initialize hidden neuron and weights in a loop
-            for i in range(self.hidden_layers_number):
-                num_neurons = self.neurons_per_layer[i]
-                #only hidden weights number can be chosen
-                num_inputs = self.num_inputs if i == 0 else self.neurons_per_layer[i-1]
+        # initialize hidden neuron and weights in a loop
+        for i in range(self.hidden_layers_number):
+            num_neurons = self.neurons_per_layer[i]
+            #only hidden weights number can be chosen
+            num_inputs = self.num_inputs if i == 0 else self.neurons_per_layer[i-1]
 
             hidden_layer = NeuronLayer(num_neurons)
             if self.extractor is not None:
@@ -91,7 +84,7 @@ class NeuralNetwork:
             self.output_layer.weights = np.empty((num_outputs, last_hidden_size))
             self.output_layer.biases = np.empty(num_outputs)
 
-            self.layers = self.hidden_layers + [self.output_layer]
+        self.layers = self.hidden_layers + [self.output_layer]
 
         for layer in self.layers:
             layer.delta_weights_old = np.zeros_like(layer.weights)
@@ -194,8 +187,7 @@ class NeuralNetwork:
             layer.delta_weights_old = delta_weights
             layer.delta_biases_old = delta_biases
 
-    def train(self, X_tr, T_tr, X_vl=None, T_vl=None, train_args=None, loss_func=None, early_stopping = None):
-
+    def train(self, X_tr, T_tr, X_vl=None, T_vl=None, train_args=None, loss_func=None, early_stopping=None):
         batch_size = train_args["batch"]["batch_size"]
         batch_droplast = train_args["batch"]["drop_last"]
         max_epochs = train_args["epochs"]
@@ -204,14 +196,18 @@ class NeuralNetwork:
         early_stopping_cond = early_stopping["enabled"]
         patience = early_stopping["patience"] if early_stopping_cond else None
         monitor = early_stopping["monitor"] if early_stopping_cond else None
-        # "sensibility" of early stopping
+        target_loss = early_stopping["target_loss"] if early_stopping_cond else None
+        
         if early_stopping_cond:
             if monitor == "val_loss":
                 epsilon_down = early_stopping["epsilon_loss_down"]
             elif monitor == "val_accuracy":
                 epsilon_up = early_stopping["epsilon_accuracy_up"]
+            elif monitor == "train_loss":
+                if target_loss is None:
+                    raise ValueError('target_loss must be provided when monitor is "train_loss"')
             else:
-                raise ValueError('monitor parameter must be "val_loss" or "val_accuracy"')
+                raise ValueError('monitor parameter must be "val_loss", "val_accuracy" or "train_loss"')
 
         if X_vl is not None:
             best_model_weights = copy.deepcopy(self.layers)
@@ -237,13 +233,12 @@ class NeuralNetwork:
 
             vl_loss.append(init_vl_loss) 
             vl_accuracy.append(init_vl_accuracy)
-        
 
         current_epoch = 0
-        patience_index = patience
+        patience_index = patience if patience is not None else float('inf')
         best_epoch = 0
+        
         while current_epoch < max_epochs and (patience_index > 0 if early_stopping_cond else True):
-            
             self.learning_rate = self.orig_learning_rate / (1 + self.decay_factor * current_epoch) if self.learning_rate > self.min_learning_rate else self.learning_rate
             current_epoch += 1
             
@@ -330,7 +325,6 @@ class NeuralNetwork:
 
                 elif batch_size == 1: 
                     for x,t in zip(X_tr,T_tr):
-
                         if self.nesterov:
                             real_weights = [layer.weights.copy() for layer in self.layers]
                             real_biases = [layer.biases.copy() for layer in self.layers]
@@ -348,12 +342,12 @@ class NeuralNetwork:
 
                         self.weights_update(1)
 
-
             else:
                 raise TypeError('batch_size is not positive int or "full".')
 
             current_tr_loss = self.loss_calculator(X_tr, T_tr)
             current_tr_accuracy = self.accuracy_calculator(X_tr, T_tr)
+            
             if X_vl is not None:
                 current_vl_loss = self.loss_calculator(X_vl, T_vl)
                 vl_loss.append(current_vl_loss)
@@ -369,28 +363,30 @@ class NeuralNetwork:
                     best_epoch = current_epoch
                     best_loss = current_vl_loss
                     best_accuracy = current_vl_accuracy
-
                 else:
                     patience_index -= 1
 
             elif early_stopping_cond and monitor == "val_accuracy":
-
                 if current_vl_accuracy >= np.max(vl_accuracy[:-1]) * (1 + epsilon_up):
                     patience_index = patience
                     best_model_weights = copy.deepcopy(self.layers)
                     best_epoch = current_epoch
                     best_loss = current_vl_loss
                     best_accuracy = current_vl_accuracy
-                
                 else:
                     patience_index -= 1
-
+                
+            elif early_stopping_cond and monitor == "train_loss":
+                if current_tr_loss < target_loss:
+                    patience_index = 0
+                    best_epoch = current_epoch
+                    best_loss = current_tr_loss
+                    best_accuracy = current_tr_accuracy
 
             tr_loss.append(current_tr_loss)
-            tr_accuracy.append(self.accuracy_calculator(X_tr, T_tr))
+            tr_accuracy.append(current_tr_accuracy)
 
-
-        print(f"Early stopping at epoch: {current_epoch}" if patience_index == 0 else f"Max epoch reached ({max_epochs})")
+        print(f"Early stopping at epoch: {current_epoch}" if (early_stopping_cond and patience_index == 0) else f"Max epoch reached ({max_epochs})")
 
         if X_vl is not None:
             self.layers = copy.deepcopy(best_model_weights)

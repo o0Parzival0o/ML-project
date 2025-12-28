@@ -31,7 +31,8 @@
           "patience": 50,
           "monitor": "val_loss",
           "epsilon_loss_down": 0.001,
-          "epsilon_accuracy_up": 0.002
+          "epsilon_accuracy_up": 0.002,
+          "target_loss": 0.0
       },
       "splitting": {
           "tr": 0.50,

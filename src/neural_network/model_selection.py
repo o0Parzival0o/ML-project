@@ -36,13 +36,12 @@ def model_assessment(training_sets, input_units, config, test_sets=None):
     else:
         num_folds = config["assessment"]["folds"] if method_assessment == "k_fold_cv" else len(X_training)
 
-        #TODO if test_sets is not None 
         final_model, avg_risk, std_risk, avg_accuracy, std_accuracy = k_fold_assessment(num_folds, config, input_units, [X_training, T_training])
         print(f"Average {num_folds}-fold test risk: {avg_risk:.6f} ± {std_risk:.6f}")
         if avg_accuracy is not None:
             print(f"Average {num_folds}-fold test accuracy: {avg_accuracy:.2%} ± {std_accuracy:.2%}\n")
         return final_model, avg_risk, avg_accuracy
-    
+
 
 def perform_search(X_train, T_train, input_units, config):
     search_type = config["training"]["search_type"]
@@ -51,27 +50,24 @@ def perform_search(X_train, T_train, input_units, config):
         raise ValueError('"search_type" must be "grid" or "random"')
 
     if search_type == "grid":
-        best_config, best_nn, best_idx = grid_search(X_train, T_train, input_units, config)
+        best_config, best_nn, best_idx, avg_loss = grid_search(X_train, T_train, input_units, config)
 
     if search_type == "random":
-        best_config, best_nn, best_idx = random_search(X_train, T_train, input_units, config)
+        best_config, best_nn, best_idx, avg_loss = random_search(X_train, T_train, input_units, config)
 
     print(f"Miglior configurazione scelta: trial {best_idx + 1}")
     print(f"{best_config}\n")
 
-    return best_config, best_nn
+    return best_config, best_nn, avg_loss
 
 
 def grid_search(X_training, T_training, input_units, config):
-
     flattened_values = utils.flatten_config(config)
-
     keys, values = zip(*flattened_values.items())
 
     trials = []
     for comb in itertools.product(*values):
         new_config = {}
-
         for k, v in zip(keys, comb):
             utils.set_dict(new_config, k, v)
         trials.append(new_config)
@@ -105,9 +101,9 @@ def grid_search(X_training, T_training, input_units, config):
 
     # run all the possible trial
     best_vl_loss = float("inf")
-    best_vl_loss = float("inf")
     best_trial_idx = None
     nn_list = []
+    avg_loss = None
     for i, trial in enumerate(trials):
         print(f"Trial {i+1}/{len(trials)} :")
 
@@ -120,6 +116,7 @@ def grid_search(X_training, T_training, input_units, config):
         
         if loss < best_vl_loss:
             best_vl_loss = loss
+            avg_loss = loss
             best_trial_idx = i
             print(f"Loss: {loss:.6f}")
             if accuracy is not None:
@@ -135,13 +132,11 @@ def grid_search(X_training, T_training, input_units, config):
     best_config = trials[best_trial_idx]
     best_nn = nn_list[best_trial_idx]
 
-    return best_config, best_nn, best_trial_idx
+    return best_config, best_nn, best_trial_idx, avg_loss
 
 
 def random_search(X_training, T_training, input_units, config):
-
     flattened_values = utils.flatten_config(config)
-
     keys, values = zip(*flattened_values.items())
 
     hyperpar_error = []
@@ -163,24 +158,18 @@ def random_search(X_training, T_training, input_units, config):
         new_config = {}
         
         for k, v in zip(keys, values):
-
             if k in hyperpar_constant:
                 random_value = v[0]
 
             if k in hyperpar_bounded:
-
                 if k == "momentum":
                     random_value = utils.loguniform(v[0], v[1])
-
                 elif isinstance(v[0], int) and isinstance(v[1], int):
                     random_value = np.random.randint(v[0], v[1] + 1)
-
                 elif isinstance(v[0], float) or isinstance(v[1], float):
                     random_value = np.round(np.random.uniform(v[0], v[1]), 4)                           # TODO rivedere il 4 (scelto arbitrariamente)
-
                 elif isinstance(v[0], list) and isinstance(v[0][0], int):
                     random_value = [np.random.randint(v[0][i], v[1][i] + 1) for i in range(len(v[0]))]
-                
                 else:
                     raise TypeError(f"Unexpected type: {k}")
                 
@@ -217,9 +206,9 @@ def random_search(X_training, T_training, input_units, config):
 
     # run all the possible trial
     best_vl_loss = float("inf")
-    best_vl_loss = float("inf")
     best_trial_idx = None
     nn_list = []
+    avg_loss = None
     for i, trial in enumerate(trials):
         print(f"Trial {i+1}/{len(trials)} :")
 
@@ -232,6 +221,7 @@ def random_search(X_training, T_training, input_units, config):
 
         if loss < best_vl_loss:
             best_vl_loss = loss
+            avg_loss = loss
             best_trial_idx = i
             print(f"Loss: {loss:.6f}")
             if accuracy is not None:
@@ -247,7 +237,7 @@ def random_search(X_training, T_training, input_units, config):
     best_config = trials[best_trial_idx]
     best_nn = nn_list[best_trial_idx]
 
-    return best_config, best_nn, best_trial_idx
+    return best_config, best_nn, best_trial_idx, avg_loss
 
 
 def launch_trial(conf, train_set, val_set, input_units, verbose=True):
@@ -267,11 +257,8 @@ def launch_trial(conf, train_set, val_set, input_units, verbose=True):
 
     train_args = conf["training"]
     training_hyperpar = conf["training"]
-
     early_stopping = conf["training"]["early_stopping"]
-
     loss_func = conf["functions"]["loss"]
-
     extractor = utils.create_extractor(conf["initialization"]["method"])
 
     nn = NeuralNetwork(num_inputs=input_units,
@@ -289,7 +276,6 @@ def launch_trial(conf, train_set, val_set, input_units, verbose=True):
         print(f"Best validation loss for this run: {best_vl_loss:.6f}\n")
 
     return nn, best_vl_loss, best_vl_accuracy
-
 
 
 def model_selection(trial_config, X_train, T_train, input_units):
@@ -317,9 +303,9 @@ def model_selection(trial_config, X_train, T_train, input_units):
         if avg_accuracy is not None:
             print(f"Average {num_folds}-fold accuracy: {avg_accuracy:.2%} ± {std_accuracy:.2%}\n")
         return nn, avg_loss, avg_accuracy
-    
 
-def train_final_model(config, X_train, T_train, input_units, epochs=None):
+
+def train_final_model(config, X_train, T_train, input_units, epochs=None, target_loss=None):
     print("Retrain:")
 
     output_units = config["architecture"]["output_units"]
@@ -341,11 +327,22 @@ def train_final_model(config, X_train, T_train, input_units, epochs=None):
                        extractor=extractor,
                        activation=act_func)
     
-    if epochs is not None:
+    if target_loss is not None:
+        config["training"]["early_stopping"] = {
+            "enabled": True,
+            "monitor": "train_loss",
+            "patience": config["training"]["epochs"],
+            "target_loss": target_loss
+        }
+        early_stopping = config["training"]["early_stopping"]
+    elif epochs is not None:
         config["training"]["epochs"] = epochs
+        early_stopping = {"enabled": False}
+    else:
+        early_stopping = {"enabled": False}
     
     nn.train(X_train, T_train, X_vl=None, T_vl=None, train_args=train_args,
-             loss_func=loss_func, early_stopping={"enabled": False})
+             loss_func=loss_func, early_stopping=early_stopping)
     
     print(f"Loss: {nn.best_loss:.6f}")
     if nn.best_accuracy is not None:
@@ -358,7 +355,7 @@ def train_final_model(config, X_train, T_train, input_units, epochs=None):
     return nn
 
 
-def evaluate_model(nn : NeuralNetwork, test_set):
+def evaluate_model(nn: NeuralNetwork, test_set):
     X_test, T_test = test_set
     predictions = np.array([nn.feed_forward(x) for x in X_test])
     risk = nn.loss_calculator(X_test, T_test)
@@ -375,18 +372,22 @@ def hold_out_assessment(config, input_units, train_set, test_set):
     X_training, T_training = train_set
 
     # model selection
-    best_config, best_nn = perform_search(X_training, T_training, input_units, config)
+    best_config, best_nn, avg_loss = perform_search(X_training, T_training, input_units, config)
 
     # retraining
-    final_model = train_final_model(best_config, X_training, T_training, input_units, epochs=best_nn.best_epoch)
+    method_selection = config["validation"]["method"]
+    if method_selection == "hold_out":
+        final_model = train_final_model(best_config, X_training, T_training, input_units, epochs=best_nn.best_epoch)
+    else:
+        final_model = train_final_model(best_config, X_training, T_training, input_units, target_loss=avg_loss)
 
     # model assessment
     risk, accuracy_risk, _ = evaluate_model(final_model, test_set)
 
     return final_model, risk, accuracy_risk
 
-def k_fold_selection(k, config, input_units, train_set):
 
+def k_fold_selection(k, config, input_units, train_set):
     k_folds = k
     indices = utils.get_k_fold_indices(len(train_set[0]), k_folds)
 
@@ -448,12 +449,16 @@ def k_fold_assessment(k, config, input_units, train_set):
         T_train_k = np.concatenate([train_set[1][:test_start], train_set[1][test_end:]])
         
         # model selection
-        best_config, best_nn = perform_search(X_train_k, T_train_k, input_units, config)
+        best_config, best_nn, avg_loss = perform_search(X_train_k, T_train_k, input_units, config)
 
         # retraining
-        final_model = train_final_model(best_config, X_train_k, T_train_k, input_units, epochs=best_nn.best_epoch)
+        method_selection = config["validation"]["method"]
+        if method_selection == "hold_out":
+            final_model = train_final_model(best_config, X_train_k, T_train_k, input_units, epochs=best_nn.best_epoch)
+        else:
+            final_model = train_final_model(best_config, X_train_k, T_train_k, input_units, target_loss=avg_loss)
 
-        # assessment
+        # model assessment
         risk, accuracy, _ = evaluate_model(final_model, [X_test_k, T_test_k])
 
         print(f"Risk: {risk:.6f}")
