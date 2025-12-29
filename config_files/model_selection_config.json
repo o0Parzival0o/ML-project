@@ -1,7 +1,7 @@
 {
   "architecture": {
       "output_units": 4,
-      "neurons_per_layer": [[10], [20], [50], [10,10], [20,20], [50,50], [20,20,20], [50,50,50], [64,64,64]]
+      "neurons_per_layer": [[50,50,50], [64,64,64]]
   },
   "functions": {
       "hidden": "relu",
@@ -61,6 +61,7 @@
       "T_params": null
   },
   "general": {
+      "dataset_name": "CUP",
       "seed": 42
   }
 }

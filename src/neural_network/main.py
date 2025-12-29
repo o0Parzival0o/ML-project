@@ -67,7 +67,6 @@ if __name__ == "__main__":
                 training_sets = [X_train, T_train]
                 test_sets = [X_test, T_test]
                 nn, _, _ = model_assessment(training_sets,input_units, config, test_sets)
-                nn.save_model(f"../../model_saved/MONK_{selected}_model.pkl")
                 nn.plot(f"MONK_{selected}_trainato")
 
 
@@ -99,7 +98,6 @@ if __name__ == "__main__":
             else:
                 training_sets = [X_train, T_train]
                 nn, _, _ = model_assessment(training_sets, input_units, config)
-                nn.save_model("../../model_saved/CUP_model.pkl")
                 nn.plot("CUP_trainato")
 
     else:

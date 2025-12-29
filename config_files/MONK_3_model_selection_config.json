@@ -1,27 +1,27 @@
 {
   "architecture": {
       "output_units": 1,
-      "neurons_per_layer": [[2], [6]]
+      "neurons_per_layer": [[4], [6]]
   },
   "functions": {
       "hidden": "relu",
       "hidden_param": 0.0,
       "output": "sigmoid",
       "output_param": 1.0,
-      "loss": "MSE"
+      "loss": "MEE"
   },
   "training": {
-      "epochs": 1000,
+      "epochs": 10000,
       "search_type": "random",
-      "number_random_trials": 4,
+      "number_random_trials": 6,
       "learning_rate": {
-          "eta": [0.01,0.001],
+          "eta": [0.05,0.03],
           "min_rate": 100,
           "decay_factor": 0.00001
       },
-      "momentum": [0.35, 0.95],
-      "nesterov": true,
-      "regularization": [0.01, 0.000001],
+      "momentum": 0,
+      "nesterov": false,
+      "regularization": 0,
       "batch": {
           "batch_size":"full",
           "drop_last": false
@@ -30,7 +30,7 @@
           "enabled": true,
           "patience": 50,
           "monitor": "val_loss",
-          "epsilon_loss_down": 0.000001,
+          "epsilon_loss_down": 0.0001,
           "epsilon_accuracy_up": 0.005,
           "target_loss": 0.0
       },
@@ -41,7 +41,7 @@
       }
   },
     "validation": {
-        "method": "k_fold_cv",
+        "method": "hold_out",
         "folds": 5
   },
     "assessment": {
@@ -61,6 +61,7 @@
       "T_params": null
   },
   "general": {
+      "dataset_name": "MONK_3",
       "seed": 42
   }
 }

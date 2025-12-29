@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 import copy
+import datetime
 
 np.random.seed(42)
 
@@ -41,7 +42,7 @@ class NeuralNetwork:
 
         # saving data preprocessing
         self.preprocessing = preprocessing[0]
-        if self.preprocessing is not None:
+        if all(self.preprocessing) is not None:
             self.X_params = preprocessing[1]
             self.T_params = preprocessing[2]
         else:
@@ -393,6 +394,8 @@ class NeuralNetwork:
                     best_epoch = current_epoch
                     best_loss = current_tr_loss
                     best_accuracy = current_tr_accuracy
+                    if X_vl is None:
+                        best_model_weights = copy.deepcopy(self.layers)
 
             tr_loss.append(current_tr_loss)
             tr_accuracy.append(current_tr_accuracy)
@@ -435,8 +438,12 @@ class NeuralNetwork:
         for x,t in zip(X,T):
             predictions = self.feed_forward(x)
 
-            if (predictions >= threshold and t == 1) or (predictions < threshold and t == 0):
-                correct_predict += 1
+            if predictions.shape[0] == 1:
+                if (predictions >= threshold and t == 1) or (predictions < threshold and t == 0):
+                    correct_predict += 1
+            else:
+                if np.all(predictions >= threshold and t == 1) or np.all(predictions < threshold and t == 0):
+                    correct_predict += 1
 
         accuracy = correct_predict / len(T)
         return accuracy
@@ -457,7 +464,7 @@ class NeuralNetwork:
             O.append(o)
         return np.array(O)
     
-    def plot_metrics(self, fig_loss=None, fig_acc=None, rows=1, cols=1, plot_index=0, changing_hyperpar=None, title=None, data_type=None):
+    def plot_metrics(self, fig_loss=None, fig_acc=None, rows=1, cols=1, plot_index=0, num_trials=None, changing_hyperpar=None, title=None, data_type=None):
         
         if self.tr_loss is not None and fig_loss:
             ax_loss = fig_loss.add_subplot(rows, cols, plot_index + 1)
@@ -528,7 +535,7 @@ class NeuralNetwork:
             ax_acc.legend(fontsize=7)
             ax_acc.grid()
 
-        if plot_index == rows * cols - 1:
+        if plot_index == (num_trials - 1 if num_trials is not None else rows * cols - 1):
             if fig_loss is not None:
                 fig_loss.subplots_adjust(hspace=0.5)
                 fig_loss.savefig(f'../../plots/{data_type}_{title}_loss.png', dpi=300)
@@ -569,7 +576,8 @@ class NeuralNetwork:
                 "learning_rate": self.orig_learning_rate,
                 "momentum": self.momentum,
                 "regularization": self.regularization
-            }
+            },
+            "date": datetime.datetime.now().isoformat()
         }
 
         with open(filepath, "wb") as file:

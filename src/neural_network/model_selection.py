@@ -6,6 +6,10 @@ from model import NeuralNetwork
 import numpy as np
 import matplotlib.pyplot as plt
 
+import datetime
+import os
+import json
+
 np.random.seed(42)
 
 
@@ -127,7 +131,7 @@ def grid_search(X_training, T_training, input_units, config):
             if accuracy is not None:
                 print(f"(accuracy: {accuracy:.2%})")
 
-        nn.plot_metrics(fig_loss, fig_acc, n_rows, n_cols, plot_index=i, changing_hyperpar=changing_hyperpar[i], title="grid_search")
+        nn.plot_metrics(fig_loss, fig_acc, n_rows, n_cols, plot_index=i, changing_hyperpar=changing_hyperpar[i], title="grid_search", data_type=config["general"]["dataset_name"])
 
     best_config = trials[best_trial_idx]
     best_nn = nn_list[best_trial_idx]
@@ -232,7 +236,7 @@ def random_search(X_training, T_training, input_units, config):
             if accuracy is not None:
                 print(f"(accuracy: {accuracy:.2%})\n")
         
-        nn.plot_metrics(fig_loss, fig_acc, n_rows, n_cols, plot_index=i, changing_hyperpar=changing_hyperpar[i], title="random_search")
+        nn.plot_metrics(fig_loss, fig_acc, n_rows, n_cols, plot_index=i, num_trials=num_trials, changing_hyperpar=changing_hyperpar[i], title="random_search", data_type=config["general"]["dataset_name"])
 
     best_config = trials[best_trial_idx]
     best_nn = nn_list[best_trial_idx]
@@ -375,11 +379,6 @@ def train_final_model(config, X_train, T_train, input_units, epochs=None, target
         X_params = None
         T_params = None
 
-    config["preprocessing"] = {
-        "type": preprocess,
-        "X_params": X_params,
-        "T_params": T_params
-    }
     preprocessing = [preprocess, X_params, T_params]
 
     nn = NeuralNetwork(num_inputs=input_units,
@@ -413,7 +412,7 @@ def train_final_model(config, X_train, T_train, input_units, epochs=None, target
 
     fig_loss = plt.figure(figsize=(5, 4))
     fig_acc = plt.figure(figsize=(5, 4))
-    nn.plot_metrics(fig_loss=fig_loss, fig_acc=fig_acc, title="best_model")
+    nn.plot_metrics(fig_loss=fig_loss, fig_acc=fig_acc, title="best_model", data_type=config["general"]["dataset_name"])
 
     return nn
 
@@ -446,6 +445,28 @@ def hold_out_assessment(config, input_units, train_set, test_set):
 
     # model assessment
     risk, accuracy_risk, _ = evaluate_model(final_model, test_set)
+
+    save_choice = input("Do you want to save the model? (0: No; 1: Yes)\n")
+    if save_choice == "1":
+        dataset_name = config["general"]["dataset_name"]
+        path = f"../../model_saved/{dataset_name}/{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        os.makedirs(path, exist_ok=True)
+
+        model_path = os.path.join(path, "model.pkl")
+        final_model.save_model(model_path)
+        best_config_path = os.path.join(path, "best_config.json")
+        with open(best_config_path, "w") as file:
+            json.dump(best_config, file)
+        config_path = os.path.join(path, "config.json")
+        with open(config_path, "w") as file:
+            json.dump(config, file)
+        result_path = os.path.join(path, "result.txt")
+        with open(result_path, "w") as file:
+            file.write(f"Date:\t\t\t{datetime.datetime.now().isoformat()}\n")
+            file.write(f"Test Loss:\t\t{risk:.6f}\n")
+            if accuracy_risk is not None:
+                file.write(f"Test Accuracy:\t{accuracy_risk:.2%}\n")
+            file.write(f"Best Epoch:\t\t{best_nn.best_epoch}")
 
     return final_model, risk, accuracy_risk
 
@@ -545,5 +566,27 @@ def k_fold_assessment(k, config, input_units, train_set):
     # save best model of kfold only for plotting (debug)
     best_fold_idx = np.argmin(total_risk)
     best_nn = nn_list[best_fold_idx]
+
+    save_choice = input("Do you want to save the model? (0: No; 1: Yes)\n")
+    if save_choice == "1":
+        dataset_name = config["general"]["dataset_name"]
+        path = f"../../model_saved/{dataset_name}/{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        os.makedirs(path, exist_ok=True)
+
+        model_path = os.path.join(path, "model.pkl")
+        final_model.save_model(model_path)
+        best_config_path = os.path.join(path, "best_config.json")
+        with open(best_config_path, "w") as file:
+            json.dump(best_config, file)
+        config_path = os.path.join(path, "config.json")
+        with open(config_path, "w") as file:
+            json.dump(config, file)
+        result_path = os.path.join(path, "result.txt")
+        with open(result_path, "w") as file:
+            file.write(f"Date:\t\t\t{datetime.datetime.now().isoformat()}\n")
+            file.write(f"Test Loss:\t\t{avg_risk:.6f} ± {std_risk:.6f}\n")
+            if avg_accuracy is not None:
+                file.write(f"Test Accuracy:\t{avg_accuracy:.2%} ± {std_accuracy:.2%}\n")
+            file.write(f"Best Epoch:\t\t{best_nn.best_epoch}")
 
     return best_nn, avg_risk, std_risk, avg_accuracy, std_accuracy

@@ -51,6 +51,7 @@
       "T_params": null
   },
   "general": {
+      "dataset_name": "MONK_1",
       "seed": 42
   }
 }
