@@ -247,6 +247,34 @@ def launch_trial(conf, train_set, val_set, input_units, verbose=True):
     X_train, T_train = train_set
     X_val, T_val = val_set
 
+    preprocess = conf["preprocessing"]["type"]
+    if preprocess == "standardization":
+        X_mean, X_std = utils.standardization(X_train)
+        T_mean, T_std = utils.standardization(T_train)
+        X_train = (X_train - X_mean) / X_std
+        T_train = (T_train - T_mean) / T_std
+        X_val = (X_val - X_mean) / X_std
+        T_val = (T_val - T_mean) / T_std
+
+        X_params = (X_mean, X_std)
+        T_params = (T_mean, T_std)
+
+    elif preprocess == "rescaling":
+        X_min, X_max = utils.scaling(X_train)
+        T_min, T_max = utils.scaling(T_train)
+        X_train = (X_train - X_min) / (X_max - X_min)
+        T_train = (T_train - T_min) / (T_max - T_min)
+        X_val = (X_val - X_min) / (X_max - X_min)
+        T_val = (T_val - T_min) / (T_max - T_min)
+    
+        X_params = (X_min, X_max)
+        T_params = (T_min, T_max)
+
+    else:
+        preprocess = None
+        X_params = None
+        T_params = None
+
     output_units = conf["architecture"]["output_units"]
     neurons_per_layer = conf["architecture"]["neurons_per_layer"]
     hidden_act_func = conf["functions"]["hidden"]
@@ -261,12 +289,15 @@ def launch_trial(conf, train_set, val_set, input_units, verbose=True):
     loss_func = conf["functions"]["loss"]
     extractor = utils.create_extractor(conf["initialization"]["method"])
 
+    preprocessing = [preprocess, X_params, T_params]
+
     nn = NeuralNetwork(num_inputs=input_units,
                        num_outputs=output_units,
                        neurons_per_layer=neurons_per_layer,
                        training_hyperpar=training_hyperpar,
                        extractor=extractor,
-                       activation=act_func)
+                       activation=act_func,
+                       preprocessing=preprocessing)
     
     nn.train(X_train, T_train, X_val, T_val, train_args=train_args, loss_func=loss_func, early_stopping=early_stopping)
 
@@ -320,12 +351,44 @@ def train_final_model(config, X_train, T_train, input_units, epochs=None, target
     loss_func = config["functions"]["loss"]
     extractor = utils.create_extractor(config["initialization"]["method"])
 
+    preprocess = config["preprocessing"]["type"]
+    if preprocess == "standardization":
+        X_mean, X_std = utils.standardization(X_train)
+        T_mean, T_std = utils.standardization(T_train)
+        X_train = (X_train - X_mean) / X_std
+        T_train = (T_train - T_mean) / T_std
+
+        X_params = (X_mean, X_std)
+        T_params = (T_mean, T_std)
+
+    elif preprocess == "rescaling":
+        X_min, X_max = utils.scaling(X_train)
+        T_min, T_max = utils.scaling(T_train)
+        X_train = (X_train - X_min) / (X_max - X_min)
+        T_train = (T_train - T_min) / (T_max - T_min)
+    
+        X_params = (X_min, X_max)
+        T_params = (T_min, T_max)
+
+    else:
+        preprocess = None
+        X_params = None
+        T_params = None
+
+    config["preprocessing"] = {
+        "type": preprocess,
+        "X_params": X_params,
+        "T_params": T_params
+    }
+    preprocessing = [preprocess, X_params, T_params]
+
     nn = NeuralNetwork(num_inputs=input_units,
                        num_outputs=output_units,
                        neurons_per_layer=neurons_per_layer,
                        training_hyperpar=training_hyperpar,
                        extractor=extractor,
-                       activation=act_func)
+                       activation=act_func,
+                       preprocessing=preprocessing)
     
     if target_loss is not None:
         config["training"]["early_stopping"] = {

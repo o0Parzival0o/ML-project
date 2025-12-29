@@ -1,7 +1,7 @@
 {
   "architecture": {
       "output_units": 4,
-      "neurons_per_layer": [3,4,2,5]
+      "neurons_per_layer": [10,10]
   },
   "functions": {
       "hidden": "relu",
@@ -11,13 +11,13 @@
       "loss": "MEE"
   },
   "training": {
-      "epochs": 5000,
+      "epochs": 10000,
       "learning_rate": {
-          "eta": 0.01,
+          "eta": 0.000001,
           "min_rate": 100,
           "decay_factor": 0.0001
       },
-      "momentum": 0.85,
+      "momentum": 0.9,
       "nesterov": true,
       "regularization": 0.0001,
       "batch": {
@@ -26,7 +26,7 @@
       },
       "early_stopping": {
           "enabled": true,
-          "patience": 10,
+          "patience": 50,
           "monitor": "val_loss",
           "epsilon_loss_down": 0.001,
           "epsilon_accuracy_up": 0.002,
@@ -34,8 +34,8 @@
       },
       "splitting": {
           "tr": 0.50,
-          "vl": 0.25,
-          "ts":0.25
+          "vl": 0.30,
+          "ts":0.20
       }
   },
   "initialization": {
@@ -44,6 +44,11 @@
   "paths": {
       "train_data": "../../ML-25-PRJ lecture amp package-20251112/ML-CUP25-TR.csv",
       "test_data": "../../ML-25-PRJ lecture amp package-20251112/ML-CUP25-TS.csv"
+  },
+  "preprocessing": {
+      "type": "rescaling",
+      "X_params": null,
+      "T_params": null
   },
   "general": {
       "seed": 42

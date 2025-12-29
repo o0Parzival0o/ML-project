@@ -8,7 +8,7 @@
       "hidden_param": 0.0,
       "output": "linear",
       "output_param": 1.0,
-      "loss": "MSE"
+      "loss": "MEE"
   },
   "training": {
       "epochs": 10000,
@@ -54,6 +54,11 @@
   "paths": {
       "train_data": "../../ML-25-PRJ lecture amp package-20251112/ML-CUP25-TR.csv",
       "test_data": "../../ML-25-PRJ lecture amp package-20251112/ML-CUP25-TS.csv"
+  },
+  "preprocessing": {
+      "type": "rescaling",
+      "X_params": null,
+      "T_params": null
   },
   "general": {
       "seed": 42

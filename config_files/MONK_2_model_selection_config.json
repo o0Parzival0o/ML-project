@@ -55,6 +55,11 @@
       "train_data": "../../MONK files/monks-2.train",
       "test_data": "../../MONK files/monks-2.test"
   },
+  "preprocessing": {
+      "type": null,
+      "X_params": null,
+      "T_params": null
+  },
   "general": {
       "seed": 42
   }

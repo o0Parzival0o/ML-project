@@ -37,7 +37,17 @@ class NeuronLayer:
 
 class NeuralNetwork:
     """ Represents a multi-layer perceptron neural network. """
-    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar=None, extractor=None, activation=[["relu", 0.], ["sigmoid", 1.]]):
+    def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar=None, extractor=None, activation=[["relu", 0.], ["sigmoid", 1.]], preprocessing=[None, None, None]):
+
+        # saving data preprocessing
+        self.preprocessing = preprocessing[0]
+        if self.preprocessing is not None:
+            self.X_params = preprocessing[1]
+            self.T_params = preprocessing[2]
+        else:
+            self.X_params = None
+            self.T_params = None
+
         self.extractor = extractor
         self.hidden_activation = actfun.activation_functions[activation[0][0]][0]
         self.d_hidden_activation = actfun.activation_functions[activation[0][0]][1]
@@ -165,10 +175,10 @@ class NeuralNetwork:
             
             previous_delta, previous_weights = layer.bp_deltas, layer.weights
  
-    def weights_update(self, l):
+    def weights_update(self, batch_size):
         for layer in self.layers:
             # gradient calculation
-            if l == 1:
+            if batch_size == 1:
                 grad_w = self.learning_rate * np.outer(layer.bp_deltas, layer.inputs)
                 grad_b = self.learning_rate * layer.bp_deltas
             else:
@@ -180,8 +190,8 @@ class NeuralNetwork:
             delta_biases = grad_b + self.momentum * layer.delta_biases_old
             
             # update new weights
-            layer.weights = layer.weights + delta_weights - self.regularization * layer.weights
-            layer.biases = layer.biases + delta_biases - self.regularization * layer.biases
+            layer.weights += delta_weights - self.regularization * layer.weights
+            layer.biases += delta_biases - self.regularization * layer.biases
 
             # save current delta
             layer.delta_weights_old = delta_weights
@@ -239,7 +249,8 @@ class NeuralNetwork:
         best_epoch = 0
         
         while current_epoch < max_epochs and (patience_index > 0 if early_stopping_cond else True):
-            self.learning_rate = self.orig_learning_rate / (1 + self.decay_factor * current_epoch) if self.learning_rate > self.min_learning_rate else self.learning_rate
+            if self.decay_factor > 0 and self.learning_rate > self.min_learning_rate:
+                self.learning_rate = self.orig_learning_rate / (1 + self.decay_factor * current_epoch)
             current_epoch += 1
             
             if batch_size == "full":
@@ -416,12 +427,17 @@ class NeuralNetwork:
     
     def accuracy_calculator(self, X, T):
         if self.output_activation.__name__ not in ["sigmoid", "tanh"]:
-            return
+            return None
+        
         correct_predict = 0
+        threshold = 0.5 if self.output_activation.__name__ == "sigmoid" else 0.
+
         for x,t in zip(X,T):
             predictions = self.feed_forward(x)
-            if (self.output_activation.__name__ == "sigmoid" and ((predictions >= 0.5 and t == 1) or (predictions < 0.5 and t == 0))) or (self.output_activation.__name__ == "tanh" and ((predictions >= 0. and t == 1) or (predictions < 0. and t == 0))):
+
+            if (predictions >= threshold and t == 1) or (predictions < threshold and t == 0):
                 correct_predict += 1
+
         accuracy = correct_predict / len(T)
         return accuracy
 
@@ -540,10 +556,20 @@ class NeuralNetwork:
                 "output": self.output_activation.__name__,
                 "output_param": self.output_activation_param
             },
+            "preprocessing": {
+                "type": self.preprocessing,
+                "X_params": self.X_params,
+                "T_params": self.T_params
+            },
             "layers": [{
                 "weights": layer.weights,
                 "biases": layer.biases
-            } for layer in self.layers]
+            } for layer in self.layers],
+            "training_hyperpar": {
+                "learning_rate": self.orig_learning_rate,
+                "momentum": self.momentum,
+                "regularization": self.regularization
+            }
         }
 
         with open(filepath, "wb") as file:

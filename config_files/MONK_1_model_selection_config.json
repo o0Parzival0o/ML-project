@@ -42,7 +42,7 @@
   },
     "validation": {
         "method": "k_fold_cv",
-        "folds": 5
+        "folds": 3
   },
     "assessment": {
         "method": "hold_out",
@@ -54,6 +54,11 @@
   "paths": {
       "train_data": "../../MONK files/monks-1.train",
       "test_data": "../../MONK files/monks-1.test"
+  },
+  "preprocessing": {
+      "type": null,
+      "X_params": null,
+      "T_params": null
   },
   "general": {
       "seed": 42

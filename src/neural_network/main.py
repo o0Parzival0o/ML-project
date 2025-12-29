@@ -1,7 +1,7 @@
 import utils
 from model import NeuralNetwork
 from data_loader import data_loader
-from model_selection import model_assessment
+from model_selection import model_assessment, launch_trial
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,12 +22,8 @@ if __name__ == "__main__":
 
     if data == "MONK":
         selected = input("Select type of MONK (1, 2, 3).\n")
-        if selected is not int and selected not in ["1","2","3"]:
+        if selected not in ["1","2","3"]:
             raise ValueError("Your input must be a number and between 1 and 3")
-    elif data == "CUP":
-        preprocess = input("Do you want to normalize the dataset? (0: No; 1: Standardize; 2: Rescaling)\n")
-        if preprocess is not int and preprocess not in ["0","1","2"]:
-            raise ValueError("Your input must be a number and between 0 and 2")
 
     prediction_input = input("Do you want to do a prediction? (0: No; 1: Yes)\n")
     if prediction_input == "0":
@@ -61,30 +57,8 @@ if __name__ == "__main__":
                 data_split_prop = [config["training"]["splitting"]["tr"], config["training"]["splitting"]["vl"]]
                 X_train, X_val, T_train, T_val = utils.data_splitting(X_train, T_train, data_split_prop)
 
-                train_args = config["training"]
-
-                hidden_act_func = config["functions"]["hidden"]
-                hidden_act_param = config["functions"]["hidden_param"]
-                output_act_func = config["functions"]["output"]
-                output_act_param = config["functions"]["output_param"]
-                act_func = [[hidden_act_func, hidden_act_param], [output_act_func, output_act_param]]
+                nn, _, _ = launch_trial(config, [X_train, T_train], [X_val, T_val], input_units, verbose=True)
                 
-                training_hyperpar = config["training"]
-                early_stopping = config["training"]["early_stopping"]
-
-                loss_func = config["functions"]["loss"]
-
-                extractor = utils.create_extractor(config["initialization"]["method"])
-
-                nn = NeuralNetwork(num_inputs=input_units,
-                                num_outputs=config["architecture"]["output_units"],
-                                neurons_per_layer=config["architecture"]["neurons_per_layer"],
-                                training_hyperpar=training_hyperpar,
-                                extractor=extractor,
-                                activation=act_func)
-                
-                nn.train(X_train, T_train, X_val, T_val, train_args=train_args, loss_func=loss_func, early_stopping=early_stopping)
-
                 fig1 = plt.figure(figsize=(5, 4))
                 fig2 = plt.figure(figsize=(5, 4))
                 nn.plot_metrics(fig1, fig2, title="single_try", data_type=f"MONK_{selected}")
@@ -108,21 +82,6 @@ if __name__ == "__main__":
 
             # utils.plot_dataset(X_train, T_train, X_CUP)
 
-            if preprocess == "1":
-                X_mean, X_std = utils.standardization(X_train)
-                T_mean, T_std = utils.standardization(T_train)
-                X_train = (X_train - X_mean) / X_std
-                T_train = (T_train - T_mean) / T_std
-
-            elif preprocess == "2":
-                X_min, X_max = utils.scaling(X_train)
-                T_min, T_max = utils.scaling(T_train)
-                X_train = (X_train - X_min) / (X_max - X_min)
-                T_train = (T_train - T_min) / (T_max - T_min)
-            
-            else:
-                pass
-
             # utils.plot_correlation(X_train, T_train)
 
             if single_trial:
@@ -130,33 +89,12 @@ if __name__ == "__main__":
                 data_split_prop = [config["training"]["splitting"]["tr"], config["training"]["splitting"]["vl"], config["training"]["splitting"]["ts"]]
                 X_train, X_val, X_test, T_train, T_val, T_test = utils.data_splitting(X_train, T_train, data_split_prop)
 
-                train_args = config["training"]
-
-                hidden_act_func = config["functions"]["hidden"]
-                hidden_act_param = config["functions"]["hidden_param"]
-                output_act_func = config["functions"]["output"]
-                output_act_param = config["functions"]["output_param"]
-                act_func = [[hidden_act_func, hidden_act_param], [output_act_func, output_act_param]]
-                
-                training_hyperpar = config["training"]
-                early_stopping = config["training"]["early_stopping"]
-
-                loss_func = config["functions"]["loss"]
-
-                extractor = utils.create_extractor(config["initialization"]["method"])
-
-                nn = NeuralNetwork(num_inputs=input_units,
-                                num_outputs=config["architecture"]["output_units"],
-                                neurons_per_layer=config["architecture"]["neurons_per_layer"],
-                                training_hyperpar=training_hyperpar,
-                                extractor=extractor,
-                                activation=act_func)
-                
-                nn.train(X_train, T_train, X_val, T_val, train_args=train_args, loss_func=loss_func, early_stopping=early_stopping)
+                nn, _, _ = launch_trial(config, [X_train, T_train], [X_val, T_val], input_units, verbose=True)
 
                 fig1 = plt.figure(figsize=(5, 4))
                 fig2 = plt.figure(figsize=(5, 4))
                 nn.plot_metrics(fig1, fig2, title="single_try", data_type="CUP")
+                nn.plot("CUP_trainato")
             
             else:
                 training_sets = [X_train, T_train]
@@ -185,38 +123,34 @@ if __name__ == "__main__":
             X_train, T_train, input_units = data_loader(CUP_train_data, data_type="train", shuffle=True)
             X_CUP, _, input_units_CUP = data_loader(CUP_test_data, data_type="test", shuffle=False)
 
-            if preprocess == 1:
-                X_mean, X_std = utils.standardization(X_train)
-                T_mean, T_std = utils.standardization(T_train)
-                X_train = (X_train - X_mean) / X_std
-                T_train = (T_train - T_mean) / T_std
-                X_CUP = (X_CUP - X_mean) / X_std
+            nn = utils.neural_network_from_file("../../model_saved/CUP_model.pkl")
 
-            elif preprocess == 2:
-                X_min, X_max = utils.scaling(X_train)
-                T_min, T_max = utils.scaling(T_train)
-                X_train = (X_train - X_min) / (X_max - X_min)
-                T_train = (T_train - T_min) / (T_max - T_min)
-                X_CUP = (X_CUP - X_min) / (X_max - X_min)
+            preprocess = nn.preprocessing
+            X_params = nn.X_params
+            T_params = nn.T_params
+            if preprocess == "standardization":
+                X_CUP = (X_CUP - X_params[0]) / X_params[1]
+
+            elif preprocess == "rescaling":
+                X_CUP = (X_CUP - X_params[0]) / (X_params[1] - X_params[0])
             
             else:
-                pass
-
-            nn = utils.neural_network_from_file("../../model_saved/CUP_model.pkl")
+                pass            
 
             nn.plot("CUP_caricato")
             
             T_CUP = nn.predict(X_CUP)
-            utils.save_predictions("../../model_saved/CUP_predictions.csv", T_CUP, team_name, members_names)
 
-            if preprocess == "1":
-                T_CUP = utils.inverse_standardization(T_CUP)
+            if preprocess == "standardization":
+                T_CUP_real = utils.inverse_standardization(T_CUP, *T_params)
 
-            elif preprocess == "2":
-                utils.inverse_scaling(T_CUP, T_min, T_max)
+            elif preprocess == "rescaling":
+                T_CUP_real = utils.inverse_scaling(T_CUP, *T_params)
             
             else:
                 pass
+
+            utils.save_predictions("../../model_saved/CUP_predictions.csv", T_CUP_real, team_name, members_names)
 
 
     end = time.time() - start
