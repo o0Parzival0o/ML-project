@@ -59,15 +59,15 @@ def perform_search(X_train, T_train, input_units, config):
         raise ValueError('"search_type" must be "grid" or "random"')
 
     if search_type == "grid":
-        best_config, best_nn, best_idx, avg_loss = grid_search(X_train, T_train, input_units, config)
+        best_config, best_nn, best_idx, avg_loss, fig_loss, fig_acc = grid_search(X_train, T_train, input_units, config)
 
     if search_type == "random":
-        best_config, best_nn, best_idx, avg_loss = random_search(X_train, T_train, input_units, config)
+        best_config, best_nn, best_idx, avg_loss, fig_loss, fig_acc = random_search(X_train, T_train, input_units, config)
 
     print(f"Miglior configurazione scelta: trial {best_idx + 1}")
     print(f"{best_config}\n")
 
-    return best_config, best_nn, avg_loss
+    return best_config, best_nn, avg_loss, fig_loss, fig_acc
 
 
 def grid_search(X_training, T_training, input_units, config):
@@ -143,7 +143,7 @@ def grid_search(X_training, T_training, input_units, config):
     best_config = trials[best_trial_idx]
     best_nn = nn_list[best_trial_idx]
 
-    return best_config, best_nn, best_trial_idx, avg_loss
+    return best_config, best_nn, best_trial_idx, avg_loss, fig_loss, fig_acc
 
 
 def random_search(X_training, T_training, input_units, config):
@@ -250,7 +250,7 @@ def random_search(X_training, T_training, input_units, config):
     best_config = trials[best_trial_idx]
     best_nn = nn_list[best_trial_idx]
 
-    return best_config, best_nn, best_trial_idx, avg_loss
+    return best_config, best_nn, best_trial_idx, avg_loss, fig_loss, fig_acc
 
 
 def launch_trial(conf, train_set, val_set, input_units, verbose=True):
@@ -425,10 +425,6 @@ def train_final_model(config, X_train, T_train, input_units, epochs=None, target
     if nn.best_accuracy is not None:
         print(f"(accuracy: {nn.best_accuracy:.2%})\n")
 
-    fig_loss = plt.figure(figsize=(5, 4))
-    fig_acc = plt.figure(figsize=(5, 4))
-    nn.plot_metrics(fig_loss=fig_loss, fig_acc=fig_acc, title="best_model", data_type=config["general"]["dataset_name"])
-
     return nn
 
 
@@ -454,7 +450,7 @@ def hold_out_assessment(config, input_units, train_set, test_set):
     X_training, T_training = train_set
 
     # model selection
-    best_config, best_nn, avg_loss = perform_search(X_training, T_training, input_units, config)
+    best_config, best_nn, avg_loss, fig_loss_search, fig_acc_search = perform_search(X_training, T_training, input_units, config)
 
     # retraining
     method_selection = config["validation"]["method"]
@@ -487,6 +483,18 @@ def hold_out_assessment(config, input_units, train_set, test_set):
             if accuracy_risk is not None:
                 file.write(f"Test Accuracy:\t{accuracy_risk:.2%}\n")
             file.write(f"Best Epoch:\t\t{best_nn.best_epoch}")
+
+        fig_loss = plt.figure(figsize=(5, 4))
+        fig_acc = plt.figure(figsize=(5, 4))
+        final_model.plot_metrics(fig_loss=fig_loss, fig_acc=fig_acc, title="best_model", data_type=dataset_name, save_path=path)
+        
+        search_type = config["training"]["search_type"]
+        if fig_loss_search is not None:
+            fig_loss_search.savefig(f'{path}/{dataset_name}_{search_type}_search_loss.png', dpi=300)
+            plt.close(fig_loss_search)
+        if fig_acc_search is not None and final_model.output_activation.__name__ in ["sigmoid", "tanh"]:
+            fig_acc_search.savefig(f'{path}/{dataset_name}_{search_type}_search_accuracy.png', dpi=300)
+            plt.close(fig_acc_search)
 
     return final_model, risk, accuracy_risk
 
@@ -544,6 +552,8 @@ def k_fold_assessment(k, config, input_units, train_set):
     total_risk = []
     total_accuracy = []
     nn_list = []
+    all_fig_loss_search = []
+    all_fig_acc_search = []
     # run over k folds  
     for i in range(k_folds):
         print(f"External fold {i+1}/{k_folds} :")
@@ -556,7 +566,10 @@ def k_fold_assessment(k, config, input_units, train_set):
         T_train_k = np.concatenate([train_set[1][:test_start], train_set[1][test_end:]])
         
         # model selection
-        best_config, best_nn, avg_loss = perform_search(X_train_k, T_train_k, input_units, config)
+        best_config, best_nn, avg_loss, fig_loss_search, fig_acc_search = perform_search(X_train_k, T_train_k, input_units, config)
+        
+        all_fig_loss_search.append(fig_loss_search)
+        all_fig_acc_search.append(fig_acc_search)
 
         # retraining
         method_selection = config["validation"]["method"]
@@ -611,5 +624,19 @@ def k_fold_assessment(k, config, input_units, train_set):
             if avg_accuracy is not None:
                 file.write(f"Test Accuracy:\t{avg_accuracy:.2%} ± {std_accuracy:.2%}\n")
             file.write(f"Best Epoch:\t\t{best_nn.best_epoch}")
+        
+        fig_loss = plt.figure(figsize=(5, 4))
+        fig_acc = plt.figure(figsize=(5, 4))
+        best_nn.plot_metrics(fig_loss=fig_loss, fig_acc=fig_acc, title="best_model", data_type=dataset_name, save_path=path)
+        
+        search_type = config["training"]["search_type"]
+        for fold_idx, (fig_loss_s, fig_acc_s) in enumerate(zip(all_fig_loss_search, all_fig_acc_search)):
+            if fig_loss_s is not None:
+                fig_loss_s.savefig(f'{path}/{dataset_name}_{search_type}_search_fold{fold_idx+1}_loss.png', dpi=300)
+                plt.close(fig_loss_s)
+            if fig_acc_s is not None and best_nn.output_activation.__name__ in ["sigmoid", "tanh"]:
+                fig_acc_s.savefig(f'{path}/{dataset_name}_{search_type}_search_fold{fold_idx+1}_accuracy.png', dpi=300)
+                plt.close(fig_acc_s)
+
 
     return best_nn, avg_risk, std_risk, avg_accuracy, std_accuracy

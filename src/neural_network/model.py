@@ -721,7 +721,7 @@ class NeuralNetwork:
             O.append(o)
         return np.array(O)
     
-    def plot_metrics(self, fig_loss=None, fig_acc=None, rows=1, cols=1, plot_index=0, num_trials=None, changing_hyperpar=None, title=None, data_type=None):
+    def plot_metrics(self, fig_loss=None, fig_acc=None, rows=1, cols=1, plot_index=0, num_trials=None, changing_hyperpar=None, title=None, data_type=None, save_path=None):
         """
         Plot the metrics of the network
 
@@ -742,9 +742,11 @@ class NeuralNetwork:
         changing_hyperpar : dict, optional
             Dictionary of hyperparameters that changed for this trial
         title : str, optional
-            Title of the plot ("best_model", "grid_search", "random_search")
+            Title of the plot ("single_trial", "best_model", "grid_search", "random_search")
         data_type : str, optional
             Dataset name ("CUP", "MONK")
+        save_path : str, optional
+            Path for saving plots
         """
         if self.tr_loss is not None and fig_loss:
             ax_loss = fig_loss.add_subplot(rows, cols, plot_index + 1)
@@ -766,6 +768,8 @@ class NeuralNetwork:
             if self.best_loss is not None:
                 if title == "best_model":
                     ax_loss.set_title(f"Best model (VL: {self.best_loss:.4f})", fontsize=8, fontweight='bold')
+                elif title == "single_trial":
+                    ax_loss.set_title(f"Single trial (VL: {self.best_loss:.4f})", fontsize=8, fontweight='bold')
                 else:
                     ax_loss.set_title(f"Trial {plot_index+1} (VL: {self.best_loss:.4f})", fontsize=8, fontweight='bold')
             else:
@@ -804,6 +808,8 @@ class NeuralNetwork:
 
                 if title == "best_model":
                     ax_acc.set_title(f"Best model (ACC: {val_acc_text})", fontsize=8, fontweight='bold')
+                elif title == "single_trial":
+                    ax_acc.set_title(f"Single trial (ACC: {val_acc_text})", fontsize=8, fontweight='bold')
                 else:
                     ax_acc.set_title(f"Trial {plot_index+1} (VL: {val_acc_text})", fontsize=8, fontweight='bold')
             else:
@@ -816,14 +822,23 @@ class NeuralNetwork:
             ax_acc.grid()
 
         if plot_index == (num_trials - 1 if num_trials is not None else rows * cols - 1):
-            if fig_loss is not None:
+            if title in ["grid_search", "random_search"]:
                 fig_loss.subplots_adjust(hspace=0.5)
-                fig_loss.savefig(f'../../plots/{data_type}_{title}_loss.png', dpi=300)
-                plt.close(fig_loss)
-            if self.output_activation.__name__ in ["sigmoid", "tanh"]:
-                fig_acc.subplots_adjust(hspace=0.5)
-                fig_acc.savefig(f'../../plots/{data_type}_{title}_accuracy.png', dpi=300)
-                plt.close(fig_acc)
+                if self.output_activation.__name__ in ["sigmoid", "tanh"]:
+                    fig_acc.subplots_adjust(hspace=0.5)
+            else:
+                if fig_loss is not None:
+                    if save_path is not None:
+                        fig_loss.savefig(f'{save_path}/{data_type}_{title}_loss.png', dpi=300)
+                    else:
+                        fig_loss.savefig(f'../../plots/{data_type}_{title}_loss.png', dpi=300)
+                    plt.close(fig_loss)
+                if self.output_activation.__name__ in ["sigmoid", "tanh"]:
+                    if save_path is not None:
+                        fig_acc.savefig(f'{save_path}/{data_type}_{title}_accuracy.png', dpi=300)
+                    else:
+                        fig_acc.savefig(f'../../plots/{data_type}_{title}_accuracy.png', dpi=300)
+                    plt.close(fig_acc)
             plt.tight_layout()
             # plt.show()
 

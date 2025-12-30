@@ -7,12 +7,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import time
-
+import os
+import datetime
+import json
 
 
 if __name__ == "__main__":
 
-    data_input = input("Select which dataset you want to use. (1: MONK; 2: CUP)\n")
+    data_input = input("Select which data woul you use. (1: MONK; 2: CUP)\n")
     if data_input == "1":
         data = "MONK"
     elif data_input == "2":
@@ -61,8 +63,28 @@ if __name__ == "__main__":
                 
                 fig1 = plt.figure(figsize=(5, 4))
                 fig2 = plt.figure(figsize=(5, 4))
-                nn.plot_metrics(fig1, fig2, title="single_try", data_type=f"MONK_{selected}")
+                save_choice = input("Do you want to save the model? (0: No; 1: Yes)\n")
+                if save_choice == "1":
+                    dataset_name = config["general"]["dataset_name"]
+                    path = f"../../model_saved/{dataset_name}/{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    os.makedirs(path, exist_ok=True)
 
+                    model_path = os.path.join(path, "model.pkl")
+                    nn.save_model(model_path)
+                    config_path = os.path.join(path, "config.json")
+                    with open(config_path, "w") as file:
+                        json.dump(config, file)
+                    result_path = os.path.join(path, "result.txt")
+                    with open(result_path, "w") as file:
+                        file.write(f"Date:\t\t\t\t\t{datetime.datetime.now().isoformat()}\n")
+                        file.write(f"Validation Loss:\t\t{nn.best_loss:.6f}\n")
+                        if nn.best_accuracy is not None:
+                            file.write(f"Validation Accuracy:\t{nn.best_accuracy:.2%}\n")
+                        file.write(f"Best Epoch:\t\t\t{nn.best_epoch}")
+
+                    nn.plot_metrics(fig1, fig2, title="single_trial", data_type=dataset_name, save_path=path)
+                else:
+                    nn.plot_metrics(fig1, fig2, title="single_trial", data_type=config["general"]["dataset_name"])
             else:
                 training_sets = [X_train, T_train]
                 test_sets = [X_test, T_test]
@@ -92,8 +114,28 @@ if __name__ == "__main__":
 
                 fig1 = plt.figure(figsize=(5, 4))
                 fig2 = plt.figure(figsize=(5, 4))
-                nn.plot_metrics(fig1, fig2, title="single_try", data_type="CUP")
-                nn.plot("CUP_trainato")
+                save_choice = input("Do you want to save the model? (0: No; 1: Yes)\n")
+                if save_choice == "1":
+                    dataset_name = config["general"]["dataset_name"]
+                    path = f"../../model_saved/{dataset_name}/{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    os.makedirs(path, exist_ok=True)
+
+                    model_path = os.path.join(path, "model.pkl")
+                    nn.save_model(model_path)
+                    config_path = os.path.join(path, "config.json")
+                    with open(config_path, "w") as file:
+                        json.dump(config, file)
+                    result_path = os.path.join(path, "result.txt")
+                    with open(result_path, "w") as file:
+                        file.write(f"Date:\t\t\t\t\t{datetime.datetime.now().isoformat()}\n")
+                        file.write(f"Validation Loss:\t\t{nn.best_loss:.6f}\n")
+                        if nn.best_accuracy is not None:
+                            file.write(f"Validation Accuracy:\t{nn.best_accuracy:.2%}\n")
+                        file.write(f"Best Epoch:\t\t\t{nn.best_epoch}")
+
+                    nn.plot_metrics(fig1, fig2, title="single_trial", data_type=dataset_name, save_path=path)
+                else:
+                    nn.plot_metrics(fig1, fig2, title="single_trial", data_type=config["general"]["dataset_name"])
             
             else:
                 training_sets = [X_train, T_train]
@@ -108,7 +150,10 @@ if __name__ == "__main__":
             monk_test_data = f"../../MONK files/monks-{selected}.test"
             X_test, T_test, _ = data_loader(monk_test_data, data_type="MONK")
 
-            nn = utils.neural_network_from_file(f"../../model_saved/MONK_{selected}_model.pkl")
+            dataset_name = f"MONK_{selected}"
+            model_path = f"../../model_saved/{dataset_name}"                            # TODO continuare da qui
+
+            nn = utils.neural_network_from_file(model_path)
 
             nn.plot(f"MONK_{selected}_caricato")
             
