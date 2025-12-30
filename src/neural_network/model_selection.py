@@ -10,10 +10,12 @@ import datetime
 import os
 import json
 
-np.random.seed(42)
+
 
 
 def model_assessment(training_sets, input_units, config, test_sets=None):
+    '''Depending on config, chooses betwen hold out or k fold cv assessment and estimates the risk on tests set
+    '''
     X_training, T_training = training_sets
     method_assessment = config["assessment"]["method"]
     
@@ -48,6 +50,9 @@ def model_assessment(training_sets, input_units, config, test_sets=None):
 
 
 def perform_search(X_train, T_train, input_units, config):
+    '''High level orchestrator, calls grid or random search, returns best config, best nn, and loss. 
+    Does not handle logic to iterate between configurations, that is up to grid_search or random_search
+    '''
     search_type = config["training"]["search_type"]
 
     if search_type not in ["grid", "random"]:
@@ -66,6 +71,8 @@ def perform_search(X_train, T_train, input_units, config):
 
 
 def grid_search(X_training, T_training, input_units, config):
+    '''Runs grid search with parameters from a given config on a given dataset
+    '''
     flattened_values = utils.flatten_config(config)
     keys, values = zip(*flattened_values.items())
 
@@ -140,6 +147,8 @@ def grid_search(X_training, T_training, input_units, config):
 
 
 def random_search(X_training, T_training, input_units, config):
+    '''Runs random search with a given parameters config on a given dataset
+    '''
     flattened_values = utils.flatten_config(config)
     keys, values = zip(*flattened_values.items())
 
@@ -245,6 +254,7 @@ def random_search(X_training, T_training, input_units, config):
 
 
 def launch_trial(conf, train_set, val_set, input_units, verbose=True):
+    '''Runs a single training event (no model selection) with a given config'''
     if verbose:
         print(f"Parameters:\n{conf}\n")
 
@@ -301,7 +311,8 @@ def launch_trial(conf, train_set, val_set, input_units, verbose=True):
                        training_hyperpar=training_hyperpar,
                        extractor=extractor,
                        activation=act_func,
-                       preprocessing=preprocessing)
+                       preprocessing=preprocessing,
+                       )
     
     nn.train(X_train, T_train, X_val, T_val, train_args=train_args, loss_func=loss_func, early_stopping=early_stopping)
 
@@ -314,6 +325,8 @@ def launch_trial(conf, train_set, val_set, input_units, verbose=True):
 
 
 def model_selection(trial_config, X_train, T_train, input_units):
+    '''Lower level selection, evaluates a configuration via hold out or k fold
+    '''
     method_selection = trial_config["validation"]["method"]
 
     if method_selection not in ["hold_out", "k_fold_cv", "leave_one_out_cv"]:
@@ -341,6 +354,8 @@ def model_selection(trial_config, X_train, T_train, input_units):
 
 
 def train_final_model(config, X_train, T_train, input_units, epochs=None, target_loss=None):
+    '''Retrains the model with the best parameters on tr+vl
+    '''
     print("Retrain:")
 
     output_units = config["architecture"]["output_units"]
@@ -418,6 +433,8 @@ def train_final_model(config, X_train, T_train, input_units, epochs=None, target
 
 
 def evaluate_model(nn: NeuralNetwork, test_set):
+    '''Gets performance metrics score of a NN with a test set
+    '''
     X_test, T_test = test_set
     predictions = np.array([nn.feed_forward(x) for x in X_test])
     risk = nn.loss_calculator(X_test, T_test)
@@ -426,11 +443,14 @@ def evaluate_model(nn: NeuralNetwork, test_set):
 
 
 def hold_out_selection(config, input_units, train_set, val_set):
+
     nn, loss, accuracy = launch_trial(config, train_set, val_set, input_units, verbose=False)
     return nn, loss, accuracy
 
 
 def hold_out_assessment(config, input_units, train_set, test_set):
+    '''Runs search for best model, trains best model, evaluates it
+    '''
     X_training, T_training = train_set
 
     # model selection
@@ -472,6 +492,7 @@ def hold_out_assessment(config, input_units, train_set, test_set):
 
 
 def k_fold_selection(k, config, input_units, train_set):
+    '''Creates the folds and calculates best model on avg loss on a given config'''    
     k_folds = k
     indices = utils.get_k_fold_indices(len(train_set[0]), k_folds)
 
@@ -515,6 +536,8 @@ def k_fold_selection(k, config, input_units, train_set):
 
 
 def k_fold_assessment(k, config, input_units, train_set):
+    '''Creates folds and launches the search for the best model so to do double nested cv, then evaluates it
+    '''
     k_folds = k
     indices = utils.get_k_fold_indices(len(train_set[0]), k_folds)
 

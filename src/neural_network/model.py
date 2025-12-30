@@ -8,7 +8,7 @@ import pickle
 import copy
 import datetime
 
-np.random.seed(42)
+
 
 class Neuron:
     """ Represents a single neuron in the neural network. """
