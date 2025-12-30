@@ -12,7 +12,7 @@ import time
 
 if __name__ == "__main__":
 
-    data_input = input("Select which data woul you use. (1: MONK; 2: CUP)\n")
+    data_input = input("Select which dataset you want to use. (1: MONK; 2: CUP)\n")
     if data_input == "1":
         data = "MONK"
     elif data_input == "2":

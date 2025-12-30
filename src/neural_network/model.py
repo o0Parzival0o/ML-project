@@ -42,7 +42,7 @@ class NeuralNetwork:
 
         # saving data preprocessing
         self.preprocessing = preprocessing[0]
-        if all(self.preprocessing) is not None:
+        if self.preprocessing is not None:
             self.X_params = preprocessing[1]
             self.T_params = preprocessing[2]
         else:
