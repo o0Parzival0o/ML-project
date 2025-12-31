@@ -14,7 +14,7 @@ import json
 
 if __name__ == "__main__":
 
-    data_input = input("Select which data woul you use. (1: MONK; 2: CUP)\n")
+    data_input = input("Select which dataset you want to use. (1: MONK; 2: CUP)\n")
     if data_input == "1":
         data = "MONK"
     elif data_input == "2":
@@ -150,8 +150,21 @@ if __name__ == "__main__":
             monk_test_data = f"../../MONK files/monks-{selected}.test"
             X_test, T_test, _ = data_loader(monk_test_data, data_type="MONK")
 
-            dataset_name = f"MONK_{selected}"
-            model_path = f"../../model_saved/{dataset_name}"                            # TODO continuare da qui
+            config = utils.load_config_json(f"../../config_files/MONK_{selected}_config.json")
+            dataset_name = config["general"]["dataset_name"]
+
+            base_path = f"../../model_saved/{dataset_name}"
+
+            if not os.path.exists(base_path):
+                raise FileNotFoundError(f"Directory {base_path} not found")
+
+            timestamps = sorted(os.listdir(base_path))
+            
+            if not timestamps:
+                raise FileNotFoundError(f"No models in {base_path}")
+                
+            latest_run = timestamps[-1]
+            model_path = os.path.join(base_path, latest_run, "model.pkl")
 
             nn = utils.neural_network_from_file(model_path)
 
@@ -166,7 +179,23 @@ if __name__ == "__main__":
             X_train, T_train, input_units = data_loader(CUP_train_data, data_type="train", shuffle=True)
             X_CUP, _, input_units_CUP = data_loader(CUP_test_data, data_type="test", shuffle=False)
 
-            nn = utils.neural_network_from_file("../../model_saved/CUP_model.pkl")
+            config = utils.load_config_json(f"../../config_files/config.json")
+            dataset_name = config["general"]["dataset_name"]
+
+            base_path = f"../../model_saved/{dataset_name}"
+
+            if not os.path.exists(base_path):
+                raise FileNotFoundError(f"Directory {base_path} not found")
+
+            timestamps = sorted(os.listdir(base_path))
+            
+            if not timestamps:
+                raise FileNotFoundError(f"No models in {base_path}")
+                
+            latest_run = timestamps[-1]
+            model_path = os.path.join(base_path, latest_run, "model.pkl")
+            
+            nn = utils.neural_network_from_file(model_path)
 
             preprocess = nn.preprocessing
             X_params = nn.X_params
@@ -191,8 +220,9 @@ if __name__ == "__main__":
                 T_CUP_real = utils.inverse_scaling(T_CUP, *T_params)
             
             else:
-                pass
+                pass # TODO Qui avevo messo T_CUP_real = T_CUP
 
+            # TODO rivedere preprocess se è None. Mi dava None anche se nel config c'è rescaling
             utils.save_predictions("../../model_saved/CUP_predictions.csv", T_CUP_real, team_name, members_names)
 
 
