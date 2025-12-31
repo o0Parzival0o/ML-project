@@ -205,7 +205,9 @@ def neural_network_from_file(file_path):
     output_act_func = [config["functions"]["output"], config["functions"]["output_param"]]
     act_func = [hidden_act_func, output_act_func]
 
-    nn = NeuralNetwork(num_inputs=config["architecture"]["input_units"], num_outputs=config["architecture"]["output_units"], neurons_per_layer=config["architecture"]["neurons_per_layer"], activation=act_func)
+    preprocessing = [config["preprocessing"]["type"], config["preprocessing"]["X_params"], config["preprocessing"]["T_params"]]
+
+    nn = NeuralNetwork(num_inputs=config["architecture"]["input_units"], num_outputs=config["architecture"]["output_units"], neurons_per_layer=config["architecture"]["neurons_per_layer"], activation=act_func, preprocessing=preprocessing)
 
     for layer, config_layer in zip(nn.layers, config["layers"]):
         layer.weights = config_layer["weights"]
