@@ -13,7 +13,7 @@
   "training": {
       "epochs": 10000,
       "search_type": "random",
-      "number_random_trials": 6,
+      "number_random_trials": 25,
       "learning_rate": {
           "eta": [0.05,0.03],
           "min_rate": 100,
@@ -36,8 +36,8 @@
       },
       "splitting": {
           "tr": 0.75,
-          "vl": 0.15,
-          "ts": 0.10
+          "vl": 0.25,
+          "ts": 0.00
       }
   },
     "validation": {

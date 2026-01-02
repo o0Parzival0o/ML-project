@@ -175,7 +175,7 @@ def random_search(X_training, T_training, input_units, config):
                 random_value = v[0]
 
             if k in hyperpar_bounded:
-                if k == "momentum":
+                if k == "training.regularization":
                     random_value = utils.loguniform(v[0], v[1])
                 elif isinstance(v[0], int) and isinstance(v[1], int):
                     random_value = np.random.randint(v[0], v[1] + 1)
@@ -353,7 +353,7 @@ def model_selection(trial_config, X_train, T_train, input_units):
         return nn, avg_loss, avg_accuracy
 
 
-def train_final_model(config, X_train, T_train, input_units, epochs=None, target_loss=None):
+def train_final_model(config, X_train, T_train, X_test=None, T_test=None, input_units=None, epochs=None, target_loss=None):
     '''Retrains the model with the best parameters on tr+vl
     '''
     print("Retrain:")
@@ -418,7 +418,7 @@ def train_final_model(config, X_train, T_train, input_units, epochs=None, target
     else:
         early_stopping = {"enabled": False}
     
-    nn.train(X_train, T_train, X_vl=None, T_vl=None, train_args=train_args,
+    nn.train(X_train, T_train, X_vl=None, T_vl=None, X_ts=X_test, T_ts=T_test, train_args=train_args,
              loss_func=loss_func, early_stopping=early_stopping)
     
     print(f"Loss: {nn.best_loss:.6f}")
@@ -448,6 +448,7 @@ def hold_out_assessment(config, input_units, train_set, test_set):
     '''Runs search for best model, trains best model, evaluates it
     '''
     X_training, T_training = train_set
+    X_test, T_test = test_set
 
     # model selection
     best_config, best_nn, avg_loss, fig_loss_search, fig_acc_search = perform_search(X_training, T_training, input_units, config)
@@ -455,9 +456,9 @@ def hold_out_assessment(config, input_units, train_set, test_set):
     # retraining
     method_selection = config["validation"]["method"]
     if method_selection == "hold_out":
-        final_model = train_final_model(best_config, X_training, T_training, input_units, epochs=best_nn.best_epoch)
+        final_model = train_final_model(best_config, X_training, T_training, X_test, T_test, input_units, epochs=best_nn.best_epoch)
     else:
-        final_model = train_final_model(best_config, X_training, T_training, input_units, target_loss=avg_loss)
+        final_model = train_final_model(best_config, X_training, T_training, X_test, T_test, input_units, target_loss=avg_loss)
 
     # model assessment
     risk, accuracy_risk, _ = evaluate_model(final_model, test_set)
@@ -479,9 +480,12 @@ def hold_out_assessment(config, input_units, train_set, test_set):
         result_path = os.path.join(path, "result.txt")
         with open(result_path, "w") as file:
             file.write(f"Date:\t\t\t{datetime.datetime.now().isoformat()}\n")
+            file.write(f"Retrain loss:\t\t{final_model.best_loss:.6f}\n")
+            if final_model.best_accuracy is not None:
+                file.write(f"Retrain accuracy:\t{final_model.best_accuracy:.2%}\n")
             file.write(f"Test Loss:\t\t{risk:.6f}\n")
             if accuracy_risk is not None:
-                file.write(f"Test Accuracy:\t{accuracy_risk:.2%}\n")
+                file.write(f"Test Accuracy:\t\t{accuracy_risk:.2%}\n")
             file.write(f"Best Epoch:\t\t{best_nn.best_epoch}")
 
         fig_loss = plt.figure(figsize=(5, 4))
@@ -574,9 +578,9 @@ def k_fold_assessment(k, config, input_units, train_set):
         # retraining
         method_selection = config["validation"]["method"]
         if method_selection == "hold_out":
-            final_model = train_final_model(best_config, X_train_k, T_train_k, input_units, epochs=best_nn.best_epoch)
+            final_model = train_final_model(best_config, X_train_k, T_train_k, X_test_k, T_test_k, input_units, epochs=best_nn.best_epoch)
         else:
-            final_model = train_final_model(best_config, X_train_k, T_train_k, input_units, target_loss=avg_loss)
+            final_model = train_final_model(best_config, X_train_k, T_train_k, X_test_k, T_test_k, input_units, target_loss=avg_loss)
 
         # model assessment
         risk, accuracy, _ = evaluate_model(final_model, [X_test_k, T_test_k])
@@ -620,9 +624,12 @@ def k_fold_assessment(k, config, input_units, train_set):
         result_path = os.path.join(path, "result.txt")
         with open(result_path, "w") as file:
             file.write(f"Date:\t\t\t{datetime.datetime.now().isoformat()}\n")
+            file.write(f"Retrain loss:\t\t{final_model.best_loss:.6f}\n")
+            if final_model.best_accuracy is not None:
+                file.write(f"Retrain accuracy:\t{final_model.best_accuracy:.2%}\n")
             file.write(f"Test Loss:\t\t{avg_risk:.6f} ± {std_risk:.6f}\n")
             if avg_accuracy is not None:
-                file.write(f"Test Accuracy:\t{avg_accuracy:.2%} ± {std_accuracy:.2%}\n")
+                file.write(f"Test Accuracy:\t\t{avg_accuracy:.2%} ± {std_accuracy:.2%}\n")
             file.write(f"Best Epoch:\t\t{best_nn.best_epoch}")
         
         fig_loss = plt.figure(figsize=(5, 4))

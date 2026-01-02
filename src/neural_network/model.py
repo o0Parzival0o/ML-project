@@ -251,6 +251,8 @@ class NeuralNetwork:
         self.tr_accuracy = None
         self.vl_loss = None
         self.vl_accuracy = None
+        self.ts_loss = None
+        self.ts_accuracy = None
         self.best_epoch = None
         self.best_loss = None
         self.best_accuracy = None
@@ -371,7 +373,7 @@ class NeuralNetwork:
             layer.delta_weights_old = delta_weights
             layer.delta_biases_old = delta_biases
 
-    def train(self, X_tr, T_tr, X_vl=None, T_vl=None, train_args=None, loss_func=None, early_stopping=None):
+    def train(self, X_tr, T_tr, X_vl=None, T_vl=None, X_ts=None, T_ts=None, train_args=None, loss_func=None, early_stopping=None):
         """
         Train the entire neural network.
 
@@ -436,6 +438,8 @@ class NeuralNetwork:
         tr_accuracy = []
         vl_loss = []
         vl_accuracy = []
+        ts_loss = []
+        ts_accuracy = []
 
         tr_loss.append(self.loss_calculator(X_tr, T_tr))                 # loss 0: with random parameters
         tr_accuracy.append(self.accuracy_calculator(X_tr, T_tr))
@@ -452,6 +456,13 @@ class NeuralNetwork:
 
             vl_loss.append(init_vl_loss) 
             vl_accuracy.append(init_vl_accuracy)
+
+        if X_ts is not None:
+            init_ts_loss = self.loss_calculator(X_ts, T_ts)
+            init_ts_accuracy = self.accuracy_calculator(X_ts, T_ts)
+
+            ts_loss.append(init_ts_loss) 
+            ts_accuracy.append(init_ts_accuracy)
 
         current_epoch = 0
         patience_index = patience if patience is not None else float('inf')
@@ -574,6 +585,12 @@ class NeuralNetwork:
                 current_vl_accuracy = self.accuracy_calculator(X_vl, T_vl)
                 vl_accuracy.append(current_vl_accuracy)
             
+            if X_ts is not None:
+                current_ts_loss = self.loss_calculator(X_ts, T_ts)
+                ts_loss.append(current_ts_loss)
+                current_ts_accuracy = self.accuracy_calculator(X_ts, T_ts)
+                ts_accuracy.append(current_ts_accuracy)
+            
             #check if vl increases
             if early_stopping_cond and monitor == "val_loss":
 
@@ -630,6 +647,9 @@ class NeuralNetwork:
         if X_vl is not None:
             self.vl_loss = vl_loss
             self.vl_accuracy = vl_accuracy
+        if X_ts is not None:
+            self.ts_loss = ts_loss
+            self.ts_accuracy = ts_accuracy
     
     def loss_calculator(self, X, T):
         """
@@ -748,6 +768,8 @@ class NeuralNetwork:
 
             if self.vl_loss is not None:
                 ax_loss.plot(self.vl_loss, c='b', linestyle='--', label='Validation')
+            elif self.ts_loss is not None:
+                ax_loss.plot(self.ts_loss, c='b', linestyle='--', label='Test')
 
             if changing_hyperpar:
                 for k, v in changing_hyperpar.items():
@@ -757,7 +779,7 @@ class NeuralNetwork:
             if plot_index >= rows * (cols - 1):
                 ax_loss.set_xlabel("Epochs")
             if plot_index % cols == 0:
-                ax_loss.set_ylabel("Loss / Validation loss" if self.vl_loss is not None else "Loss")
+                ax_loss.set_ylabel("Loss / Validation loss" if self.vl_loss is not None else "Loss / Risk" if self.ts_loss is not None else "Loss")
 
             if self.best_loss is not None:
                 if title == "best_model":
@@ -782,6 +804,8 @@ class NeuralNetwork:
 
             if self.vl_accuracy is not None:
                 ax_acc.plot(self.vl_accuracy, c='b', linestyle='--', label='Validation')
+            elif self.ts_accuracy is not None:
+                ax_acc.plot(self.ts_accuracy, c='b', linestyle='--', label='Test')
 
             if self.vl_accuracy is not None:
                 if changing_hyperpar:
@@ -792,7 +816,7 @@ class NeuralNetwork:
             if plot_index >= rows * (cols - 1):
                 ax_acc.set_xlabel("Epochs")
             if plot_index % cols == 0:
-                ax_acc.set_ylabel("Accuracy / Validation accuracy" if self.vl_accuracy is not None else "Accuracy")
+                ax_acc.set_ylabel("Accuracy / Validation accuracy" if self.vl_accuracy is not None else "Accuracy / Risk accuracy" if self.ts_accuracy is not None else "Accuracy")
 
             if self.output_activation.__name__ in ["sigmoid", "tanh"]:
                 if self.best_accuracy is not None:
@@ -833,7 +857,8 @@ class NeuralNetwork:
                     else:
                         fig_acc.savefig(f'../../plots/{data_type}_{title}_accuracy.png', dpi=300)
                     plt.close(fig_acc)
-            plt.tight_layout()
+            fig_loss.tight_layout()
+            fig_acc.tight_layout()
             # plt.show()
 
     def save_model(self, filepath):

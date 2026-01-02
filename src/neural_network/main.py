@@ -1,5 +1,4 @@
 import utils
-from model import NeuralNetwork
 from data_loader import data_loader
 from model_selection import model_assessment, launch_trial
 
