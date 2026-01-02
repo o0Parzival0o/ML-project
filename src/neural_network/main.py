@@ -89,8 +89,6 @@ if __name__ == "__main__":
                 training_sets = [X_train, T_train]
                 test_sets = [X_test, T_test]
                 nn, _, _ = model_assessment(training_sets,input_units, config, test_sets)
-                nn.plot(f"MONK_{selected}_trainato")
-
 
         elif data == "CUP":
             config = utils.load_config_json("../../config_files/config.json" if single_trial else "../../config_files/model_selection_config.json")
@@ -100,10 +98,6 @@ if __name__ == "__main__":
             CUP_test_data = config["paths"]["test_data"]
             X_train, T_train, input_units = data_loader(CUP_train_data, data_type="train", shuffle=True)
             X_CUP, _, input_units_CUP = data_loader(CUP_test_data, data_type="test", shuffle=False)
-
-            # utils.plot_dataset(X_train, T_train, X_CUP)
-
-            # utils.plot_correlation(X_train, T_train)
 
             if single_trial:
 
@@ -140,7 +134,6 @@ if __name__ == "__main__":
             else:
                 training_sets = [X_train, T_train]
                 nn, _, _ = model_assessment(training_sets, input_units, config)
-                nn.plot("CUP_trainato")
 
     else:
         members_names = ["Andrea Marcheschi", "Luca Nasini", "Simone Passera"]
@@ -168,8 +161,6 @@ if __name__ == "__main__":
 
             nn = utils.neural_network_from_file(model_path)
 
-            nn.plot(f"MONK_{selected}_caricato")
-            
             T_predicted = np.round(nn.predict(X_test)).astype(int)
             utils.save_predictions(f"../../model_saved/MONK_{selected}_predictions.csv", T_predicted, team_name, members_names)
 
@@ -210,8 +201,6 @@ if __name__ == "__main__":
             else:
                 pass            
 
-            nn.plot("CUP_caricato")
-            
             T_CUP = nn.predict(X_CUP)
 
             if preprocess == "standardization":
@@ -229,12 +218,5 @@ if __name__ == "__main__":
     end = time.time() - start
     print(f"Elapsed time: {end} s")
 
-
-
-    #print(nn)
-    #nn.plot()                                   # (da eliminare prima di mandare a Micheli)
-
     #TODO forse ha senso rimuovere dai config il seme (tanto basta far sì che sia riproducibile con seme hardcodato su macchine diverse, non ci interessa cambiare il seme, oppure vedere se ha senso tenerlo e provare con inizializzazioni diverse)
-    #TODO nn validate da fare
     #TODO uniformare impostazione seed randomico da json nei vari file py, non so se sia per come funziona rand ma per ora l'inizializzazione mi sembra essere diversa tra run diverse
-    

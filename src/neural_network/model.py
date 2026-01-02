@@ -1,4 +1,3 @@
-from network_plot import plot_network # (da eliminare prima di mandare a Micheli)
 import activations as actfun
 import losses
 
@@ -291,9 +290,6 @@ class NeuralNetwork:
             result.append(f'\t\t{neuron}:\t'+'\t'.join(f'{weight:.2f}' for weight in neuron.weights))
         return '\n'.join(result)
     
-    def plot(self, fig_name): # (da eliminare prima di mandare a Micheli)
-        plot_network(self, fig_name)
-
     def feed_forward(self, inputs):
         """
         Propagate inputs through the network.
