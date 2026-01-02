@@ -180,7 +180,7 @@ def random_search(X_training, T_training, input_units, config):
                 elif isinstance(v[0], int) and isinstance(v[1], int):
                     random_value = np.random.randint(v[0], v[1] + 1)
                 elif isinstance(v[0], float) or isinstance(v[1], float):
-                    random_value = np.round(np.random.uniform(v[0], v[1]), 4)                           # TODO rivedere il 4 (scelto arbitrariamente)
+                    random_value = np.random.uniform(v[0], v[1]) 
                 elif isinstance(v[0], list) and isinstance(v[0][0], int):
                     random_value = [np.random.randint(v[0][i], v[1][i] + 1) for i in range(len(v[0]))]
                 else:

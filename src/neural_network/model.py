@@ -199,8 +199,6 @@ class NeuralNetwork:
         self.hidden_layers_number = len(neurons_per_layer)              #how many hidden layers
         self.num_outputs = num_outputs
 
-        #TODO più in la col training valutare se ha senso accorpare hidden layers con input e output in un unica struttura layers
-
         self.hidden_layers = []
         self.output_layer = []
 
