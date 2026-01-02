@@ -200,6 +200,7 @@ if __name__ == "__main__":
             preprocess = nn.preprocessing
             X_params = nn.X_params
             T_params = nn.T_params
+            
             if preprocess == "standardization":
                 X_CUP = (X_CUP - X_params[0]) / X_params[1]
 
@@ -220,9 +221,8 @@ if __name__ == "__main__":
                 T_CUP_real = utils.inverse_scaling(T_CUP, *T_params)
             
             else:
-                pass # TODO Qui avevo messo T_CUP_real = T_CUP
+                T_CUP_real = T_CUP
 
-            # TODO rivedere preprocess se è None. Mi dava None anche se nel config c'è rescaling
             utils.save_predictions("../../model_saved/CUP_predictions.csv", T_CUP_real, team_name, members_names)
 
 
