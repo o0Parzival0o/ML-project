@@ -39,7 +39,8 @@
       }
   },
   "initialization": {
-      "method": "random"
+      "method": "random",
+      "range": 1.4
   },
   "paths": {
       "train_data": "../../ML-25-PRJ lecture amp package-20251112/ML-CUP25-TR.csv",

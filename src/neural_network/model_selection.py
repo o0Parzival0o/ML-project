@@ -1,6 +1,4 @@
 import utils
-import losses
-import itertools
 from model import NeuralNetwork
 
 import numpy as np
@@ -9,8 +7,7 @@ import matplotlib.pyplot as plt
 import datetime
 import os
 import json
-
-
+import itertools
 
 
 def model_assessment(training_sets, input_units, config, test_sets=None):
@@ -134,9 +131,11 @@ def grid_search(X_training, T_training, input_units, config):
                 print(f"(accuracy: {accuracy:.2%})")
             print(f"New best found!\n")
         else:
-            print(f"Loss: {loss:.6f}\n")
+            print(f"Loss: {loss:.6f}")
             if accuracy is not None:
-                print(f"(accuracy: {accuracy:.2%})")
+                print(f"(accuracy: {accuracy:.2%})\n")
+            else:
+                print("")
 
         nn.plot_metrics(fig_loss, fig_acc, n_rows, n_cols, plot_index=i, changing_hyperpar=changing_hyperpar[i], title="grid_search", data_type=config["general"]["dataset_name"])
 
@@ -244,6 +243,8 @@ def random_search(X_training, T_training, input_units, config):
             print(f"Loss: {loss:.6f}")
             if accuracy is not None:
                 print(f"(accuracy: {accuracy:.2%})\n")
+            else:
+                print("")
         
         nn.plot_metrics(fig_loss, fig_acc, n_rows, n_cols, plot_index=i, num_trials=num_trials, changing_hyperpar=changing_hyperpar[i], title="random_search", data_type=config["general"]["dataset_name"])
 
@@ -301,7 +302,7 @@ def launch_trial(conf, train_set, val_set, input_units, verbose=True):
     training_hyperpar = conf["training"]
     early_stopping = conf["training"]["early_stopping"]
     loss_func = conf["functions"]["loss"]
-    extractor = utils.create_extractor(conf["initialization"]["method"])
+    extractor = utils.create_extractor(conf["initialization"]["method"], conf["initialization"]["range"])
 
     preprocessing = [preprocess, X_params, T_params]
 
@@ -368,7 +369,7 @@ def train_final_model(config, X_train, T_train, X_test=None, T_test=None, input_
     train_args = config["training"]
     training_hyperpar = config["training"]
     loss_func = config["functions"]["loss"]
-    extractor = utils.create_extractor(config["initialization"]["method"])
+    extractor = utils.create_extractor(config["initialization"]["method"], config["initialization"]["range"])
 
     preprocess = config["preprocessing"]["type"]
     if preprocess == "standardization":

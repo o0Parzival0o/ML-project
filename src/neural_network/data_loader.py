@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 
+
 def preprocess_monk(path_file):
     """ Preprocess the MONK dataset by performing one-hot encoding on categorical features.  Returns the one-hot encoded patterns, targets and the number of input units."""
     if "train" in path_file:

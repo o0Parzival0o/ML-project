@@ -39,7 +39,8 @@
       }
   },
   "initialization": {
-      "method": "fan_in"
+      "method": "fan_in",
+      "range": 1.4
   },
   "paths": {
       "train_data": "../../MONK files/monks-1.train",

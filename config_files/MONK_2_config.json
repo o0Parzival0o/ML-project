@@ -39,7 +39,8 @@
       }
   },
   "initialization": {
-      "method": "xavier"
+      "method": "xavier",
+      "range": 1.4
   },
   "paths": {
       "train_data": "../../MONK files/monks-2.train",

@@ -1,7 +1,7 @@
 {
   "architecture": {
       "output_units": 1,
-      "neurons_per_layer": [[4], [6]]
+      "neurons_per_layer": [[3], [4], [5]]
   },
   "functions": {
       "hidden": "relu",
@@ -12,10 +12,10 @@
   },
   "training": {
       "epochs": 10000,
-      "search_type": "random",
+      "search_type": "grid",
       "number_random_trials": 25,
       "learning_rate": {
-          "eta": [0.05,0.03],
+          "eta": [0.05, 0.04, 0.03, 0.02, 0.01],
           "min_rate": 100,
           "decay_factor": 0.00001
       },
@@ -41,7 +41,7 @@
       }
   },
     "validation": {
-        "method": "hold_out",
+        "method": "k_fold_cv",
         "folds": 5
   },
     "assessment": {

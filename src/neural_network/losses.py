@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def MSE(o, t):
     t = t.astype(float)
     diff = o - t

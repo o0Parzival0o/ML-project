@@ -1,13 +1,12 @@
 from model import NeuralNetwork
 
-import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 import pandas as pd
-import pickle
 
+import pickle
 import json
 import datetime
+
 
 def load_config_json(filepath):
     """Loads the configuration from the specified JSON file."""
@@ -16,8 +15,7 @@ def load_config_json(filepath):
     return config
 
 #can choose between different extraction methods for the weights/biases
-def create_extractor(method):
-    range = 1.4
+def create_extractor(method, range):
     if(method == "random"):
         def random_extractor(fan_in=None, fan_out=None, a=None):
             return np.random.uniform(-range/2, range/2)

@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def linear(x, a=1.):
     return a*x
 
