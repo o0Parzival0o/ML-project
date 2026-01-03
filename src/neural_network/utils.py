@@ -51,10 +51,10 @@ def scaling(X):                        # remember to do the inverse at the end w
     return X_min, X_max
 
 def inverse_standardization(X, X_mean, X_std):
-    return X * X_std + X_mean
+    return X * X_std + X_mean            #returns un-standardized results
 
 def inverse_scaling(X, X_min, X_max):
-    return X * (X_max - X_min) + X_min
+    return X * (X_max - X_min) + X_min           #returns un-scaled results
 
 def data_splitting(X, T, proportions=[1,0,0]):
     if any(prop < 0 for prop in proportions):
@@ -76,21 +76,24 @@ def data_splitting(X, T, proportions=[1,0,0]):
         
         start = end
 
-    # Ritorno direttamente tutti i vettori come variabili separate
+    # returning results as separate vectors
     return (*X_splits, *T_splits)
 
 
 def flatten_config(d, parent_key='', sep='.'):
-
+    '''
+    Loads the json in memory keeping the same structure as the json but with multiple values
+    '''
     items = []
     for k, v in d.items():
-        new_key = f"{parent_key}{sep}{k}" if parent_key else k
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k          #used to create a trail when iterating through nested elements of the config json
         
-        if isinstance(v, dict):
+        
+        if isinstance(v, dict):         #if there is a dictionary, recursively call the flattening and add the dictionary name as parent key
             items.extend(flatten_config(v, new_key, sep=sep).items())
 
         elif isinstance(v, list):
-            items.append((new_key, v))
+            items.append((new_key, v))      #otherwise, just add the leaf
             
         else:
             items.append((new_key, [v]))
@@ -114,7 +117,7 @@ def get_k_fold_indices(n_samples, k_folds):
     folds_indexes = []
     start_index = 0
     
-    for i in range(k_folds):
+    for i in range(k_folds):            #calculates the start and ending indexes for each fold
         current_fold_size = folds_size + (1 if i < folds_remainder else 0)
         current_end = start_index + current_fold_size
         folds_indexes.append((start_index, current_end))
