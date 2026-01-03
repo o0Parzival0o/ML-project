@@ -1,7 +1,7 @@
 {
   "architecture": {
       "output_units": 1,
-      "neurons_per_layer": [[3], [4], [5]]
+      "neurons_per_layer": [[2], [5]]
   },
   "functions": {
       "hidden": "relu",
@@ -12,12 +12,12 @@
   },
   "training": {
       "epochs": 10000,
-      "search_type": "grid",
-      "number_random_trials": 25,
+      "search_type": "random",
+      "number_random_trials": 100,
       "learning_rate": {
-          "eta": [0.05, 0.04, 0.03, 0.02, 0.01],
+          "eta": [0.05, 0.005],
           "min_rate": 100,
-          "decay_factor": 0.00001
+          "decay_factor": 1e-05
       },
       "momentum": 0,
       "nesterov": false,
@@ -41,7 +41,7 @@
       }
   },
     "validation": {
-        "method": "k_fold_cv",
+        "method": "hold_out",
         "folds": 5
   },
     "assessment": {
@@ -49,7 +49,8 @@
         "folds": 5
   },
   "initialization": {
-      "method": "fan_in"
+      "method": "he",
+      "range": 1.4
   },
   "paths": {
       "train_data": "../../MONK files/monks-3.train",
@@ -62,6 +63,6 @@
   },
   "general": {
       "dataset_name": "MONK_3",
-      "seed": 42
+      "seed": null
   }
 }

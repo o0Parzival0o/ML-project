@@ -783,18 +783,18 @@ class NeuralNetwork:
 
             if self.best_loss is not None:
                 if title == "best_model":
-                    ax_loss.set_title(f"Best model (VL: {self.best_loss:.4f})", fontsize=8, fontweight='bold')
+                    ax_loss.set_title(f"Best model (VL: {self.best_loss:.4f})", fontsize=14, fontweight='bold')
                 elif title == "single_trial":
-                    ax_loss.set_title(f"Single trial (VL: {self.best_loss:.4f})", fontsize=8, fontweight='bold')
+                    ax_loss.set_title(f"Single trial (VL: {self.best_loss:.4f})", fontsize=14, fontweight='bold')
                 else:
-                    ax_loss.set_title(f"Trial {plot_index+1} (VL: {self.best_loss:.4f})", fontsize=8, fontweight='bold')
+                    ax_loss.set_title(f"Trial {plot_index+1} (VL: {self.best_loss:.4f})", fontsize=14, fontweight='bold')
             else:
                 if title == "best_model":
-                    ax_loss.set_title(f"Retraining", fontsize=8, fontweight='bold')
+                    ax_loss.set_title(f"Retraining", fontsize=14, fontweight='bold')
                 else:
-                    ax_loss.set_title(f"Retraining: trial {plot_index+1}", fontsize=8, fontweight='bold')
+                    ax_loss.set_title(f"Retraining: trial {plot_index+1}", fontsize=14, fontweight='bold')
 
-            ax_loss.legend(fontsize=7)
+            ax_loss.legend(fontsize=12)
             ax_loss.grid()
             ax_loss.set_yscale('log')
 
@@ -825,18 +825,18 @@ class NeuralNetwork:
                     val_acc_text = "N/A"
 
                 if title == "best_model":
-                    ax_acc.set_title(f"Best model (ACC: {val_acc_text})", fontsize=8, fontweight='bold')
+                    ax_acc.set_title(f"Best model (ACC: {val_acc_text})", fontsize=12, fontweight='bold')
                 elif title == "single_trial":
-                    ax_acc.set_title(f"Single trial (ACC: {val_acc_text})", fontsize=8, fontweight='bold')
+                    ax_acc.set_title(f"Single trial (ACC: {val_acc_text})", fontsize=12, fontweight='bold')
                 else:
-                    ax_acc.set_title(f"Trial {plot_index+1} (VL: {val_acc_text})", fontsize=8, fontweight='bold')
+                    ax_acc.set_title(f"Trial {plot_index+1} (VL: {val_acc_text})", fontsize=12, fontweight='bold')
             else:
                 if title == "best_model":
-                    ax_acc.set_title(f"Retraining", fontsize=8, fontweight='bold')
+                    ax_acc.set_title(f"Retraining", fontsize=12, fontweight='bold')
                 else:
-                    ax_acc.set_title(f"Retraining: trial {plot_index+1}", fontsize=8, fontweight='bold')
+                    ax_acc.set_title(f"Retraining: trial {plot_index+1}", fontsize=12, fontweight='bold')
 
-            ax_acc.legend(fontsize=7)
+            ax_acc.legend(fontsize=12)
             ax_acc.grid()
 
         if plot_index == (num_trials - 1 if num_trials is not None else rows * cols - 1):

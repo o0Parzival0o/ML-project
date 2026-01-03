@@ -70,9 +70,10 @@ if __name__ == "__main__":
                 fig1 = plt.figure(figsize=(5, 4))
                 fig2 = plt.figure(figsize=(5, 4))
                 save_choice = input("Do you want to save the model? (0: No; 1: Yes)\n")
+                dir_name = input("Directory name: ")
                 if save_choice == "1":
                     dataset_name = config["general"]["dataset_name"]
-                    path = f"../../model_saved/{dataset_name}/{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    path = f"../../model_saved/{dataset_name}/" + (f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{dir_name}" if dir_name != "" else f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}")
                     os.makedirs(path, exist_ok=True)
 
                     model_path = os.path.join(path, "model.pkl")
@@ -122,9 +123,10 @@ if __name__ == "__main__":
                 fig1 = plt.figure(figsize=(5, 4))
                 fig2 = plt.figure(figsize=(5, 4))
                 save_choice = input("Do you want to save the model? (0: No; 1: Yes)\n")
+                dir_name = input("Directory name: ")
                 if save_choice == "1":
                     dataset_name = config["general"]["dataset_name"]
-                    path = f"../../model_saved/{dataset_name}/{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    path = f"../../model_saved/{dataset_name}/" + (f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{dir_name}" if dir_name != "" else f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}")
                     os.makedirs(path, exist_ok=True)
 
                     model_path = os.path.join(path, "model.pkl")

@@ -1,6 +1,0 @@
-Date:			2026-01-03T14:57:47.967800
-Retrain loss:		0.047692
-Retrain accuracy:	100.00%
-Test Loss:		0.084844
-Test Accuracy:		93.98%
-Best Epoch:		626

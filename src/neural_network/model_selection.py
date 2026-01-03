@@ -465,9 +465,10 @@ def hold_out_assessment(config, input_units, train_set, test_set):
     risk, accuracy_risk, _ = evaluate_model(final_model, test_set)
 
     save_choice = input("Do you want to save the model? (0: No; 1: Yes)\n")
+    dir_name = input("Directory name: ")
     if save_choice == "1":
         dataset_name = config["general"]["dataset_name"]
-        path = f"../../model_saved/{dataset_name}/{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        path = f"../../model_saved/{dataset_name}/" + (f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{dir_name}" if dir_name != "" else f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}")
         os.makedirs(path, exist_ok=True)
 
         model_path = os.path.join(path, "model.pkl")
@@ -609,9 +610,10 @@ def k_fold_assessment(k, config, input_units, train_set):
     best_nn = nn_list[best_fold_idx]
 
     save_choice = input("Do you want to save the model? (0: No; 1: Yes)\n")
+    dir_name = input("Directory name: ")
     if save_choice == "1":
         dataset_name = config["general"]["dataset_name"]
-        path = f"../../model_saved/{dataset_name}/{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        path = f"../../model_saved/{dataset_name}/" + (f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{dir_name}" if dir_name != "" else f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}")
         os.makedirs(path, exist_ok=True)
 
         model_path = os.path.join(path, "model.pkl")
