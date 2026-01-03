@@ -46,7 +46,14 @@ if __name__ == "__main__":
     if not prediction:
         if data == "MONK":
             config = utils.load_config_json(f"../../config_files/MONK_{selected}_config.json" if single_trial else f"../../config_files/MONK_{selected}_model_selection_config.json")
-            np.random.seed(config["general"]["seed"])
+            seed = config["general"]["seed"]
+            if seed is not None:
+                pass
+            else:
+                max_seed = 2**31
+                seed = np.random.randint(0, max_seed)
+                config["general"]["seed"] = seed
+            np.random.seed(seed)
 
             monk_train_data = config["paths"]["train_data"]
             monk_test_data = config["paths"]["test_data"]
