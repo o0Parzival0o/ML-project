@@ -846,19 +846,19 @@ class NeuralNetwork:
                     fig_acc.subplots_adjust(hspace=0.5)
             else:
                 if fig_loss is not None:
+                    fig_loss.tight_layout()
                     if save_path is not None:
                         fig_loss.savefig(f'{save_path}/{data_type}_{title}_loss.png', dpi=300)
                     else:
                         fig_loss.savefig(f'../../plots/{data_type}_{title}_loss.png', dpi=300)
                     plt.close(fig_loss)
                 if self.output_activation.__name__ in ["sigmoid", "tanh"]:
+                    fig_acc.tight_layout()
                     if save_path is not None:
                         fig_acc.savefig(f'{save_path}/{data_type}_{title}_accuracy.png', dpi=300)
                     else:
                         fig_acc.savefig(f'../../plots/{data_type}_{title}_accuracy.png', dpi=300)
                     plt.close(fig_acc)
-            fig_loss.tight_layout()
-            fig_acc.tight_layout()
             # plt.show()
 
     def save_model(self, filepath):
