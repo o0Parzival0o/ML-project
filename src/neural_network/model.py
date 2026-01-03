@@ -3,10 +3,10 @@ import losses
 
 import numpy as np
 import matplotlib.pyplot as plt
+
 import pickle
 import copy
 import datetime
-
 
 
 class Neuron:
