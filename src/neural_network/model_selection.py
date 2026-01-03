@@ -316,7 +316,7 @@ def launch_trial(conf, train_set, val_set, input_units, verbose=True):
     
     nn.train(X_train, T_train, X_val, T_val, train_args=train_args, loss_func=loss_func, early_stopping=early_stopping)         #launch training
 
-    best_vl_loss = nn.best_loss         #best vl loss represents the lowest loss obtained during training, keeping the lowest loss even if the training continues for $patience$ epochs without improving the loss. It is not similar to the best loss in model selection
+    best_vl_loss = nn.best_loss         #best vl loss represents the lowest loss obtained during training on vl, keeping the lowest loss even if the training continues for $patience$ epochs without improving the loss. It represents a single run, and shall not be confused with the avg loss obtained in model selection by averaging losses of different folds
     best_vl_accuracy = nn.best_accuracy         #same as for the comment above
     if verbose:
         print(f"Best validation loss for this run: {best_vl_loss:.6f}\n")
