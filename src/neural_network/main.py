@@ -98,7 +98,14 @@ if __name__ == "__main__":
 
         elif data == "CUP":
             config = utils.load_config_json("../../config_files/config.json" if single_trial else "../../config_files/model_selection_config.json")
-            np.random.seed(config["general"]["seed"])
+            seed = config["general"]["seed"]
+            if seed is not None:
+                pass
+            else:
+                max_seed = 2**31
+                seed = np.random.randint(0, max_seed)
+                config["general"]["seed"] = seed
+            np.random.seed(seed)
 
             CUP_train_data = config["paths"]["train_data"]
             CUP_test_data = config["paths"]["test_data"]
