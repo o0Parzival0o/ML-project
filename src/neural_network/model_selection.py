@@ -377,6 +377,9 @@ def train_final_model(config, X_train, T_train, X_test=None, T_test=None, input_
         T_mean, T_std = utils.standardization(T_train)
         X_train = (X_train - X_mean) / X_std
         T_train = (T_train - T_mean) / T_std
+        if X_test is not None:
+            X_test = (X_test - X_mean) / X_std
+            T_test = (T_test - T_mean) / T_std
 
         X_params = (X_mean, X_std)
         T_params = (T_mean, T_std)
@@ -386,6 +389,9 @@ def train_final_model(config, X_train, T_train, X_test=None, T_test=None, input_
         T_min, T_max = utils.scaling(T_train)
         X_train = (X_train - X_min) / (X_max - X_min)
         T_train = (T_train - T_min) / (T_max - T_min)
+        if X_test is not None:
+            X_test = (X_test - X_min) / (X_max - X_min)
+            T_test = (T_test - T_min) / (T_max - T_min)
     
         X_params = (X_min, X_max)
         T_params = (T_min, T_max)
