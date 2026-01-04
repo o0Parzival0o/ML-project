@@ -488,7 +488,7 @@ def hold_out_assessment(config, input_units, train_set, test_set):
         result_path = os.path.join(path, "result.txt")
         with open(result_path, "w") as file:
             file.write(f"Date:\t\t\t{datetime.datetime.now().isoformat()}\n")
-            file.write(f"Retrain loss:\t\t{final_model.best_loss:.6f}\n")
+            file.write(f"Retrain loss:\t{final_model.best_loss:.6f}\n")
             if final_model.best_accuracy is not None:
                 file.write(f"Retrain accuracy:\t{final_model.best_accuracy:.2%}\n")
             file.write(f"Test Loss:\t\t{risk:.6f}\n")
@@ -633,7 +633,7 @@ def k_fold_assessment(k, config, input_units, train_set):
         result_path = os.path.join(path, "result.txt")
         with open(result_path, "w") as file:
             file.write(f"Date:\t\t\t{datetime.datetime.now().isoformat()}\n")
-            file.write(f"Retrain loss:\t\t{final_model.best_loss:.6f}\n")
+            file.write(f"Retrain loss:\t{final_model.best_loss:.6f}\n")
             if final_model.best_accuracy is not None:
                 file.write(f"Retrain accuracy:\t{final_model.best_accuracy:.2%}\n")
             file.write(f"Test Loss:\t\t{avg_risk:.6f} ± {std_risk:.6f}\n")
