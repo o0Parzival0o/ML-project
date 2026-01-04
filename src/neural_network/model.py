@@ -271,7 +271,7 @@ class NeuralNetwork:
         num_outputs : int
             Number of outputs neurons
         """
-        for neuron in layer.neurons:
+        for neuron in layer.neurons: #use a function as a sort of random generator to create the values for bias and weights
             neuron.bias = self.extractor(fan_in=num_inputs, fan_out=num_outputs, a=(self.output_activation_param if layer == self.output_layer else self.hidden_activation_param))
             for _ in range(num_inputs):
                 neuron.weights.append(self.extractor(fan_in=num_inputs, fan_out=num_outputs, a=(self.output_activation_param if layer == self.output_layer else self.hidden_activation_param)))
@@ -419,7 +419,7 @@ class NeuralNetwork:
         monitor = early_stopping["monitor"] if early_stopping_cond else None
         target_loss = early_stopping["target_loss"] if early_stopping_cond else None
         
-        if early_stopping_cond:
+        if early_stopping_cond:    
             if monitor == "val_loss":
                 epsilon_down = early_stopping["epsilon_loss_down"]
             elif monitor == "val_accuracy":
@@ -447,7 +447,7 @@ class NeuralNetwork:
         best_loss = None
         best_accuracy = None
 
-        if X_vl is not None:
+        if X_vl is not None:        #get loss for epoch 0 on vl set
             init_vl_loss = self.loss_calculator(X_vl, T_vl)
             init_vl_accuracy = self.accuracy_calculator(X_vl, T_vl)
 
@@ -457,7 +457,7 @@ class NeuralNetwork:
             vl_loss.append(init_vl_loss) 
             vl_accuracy.append(init_vl_accuracy)
 
-        if X_ts is not None:
+        if X_ts is not None:        #get loss for epoch 0 on ts set
             init_ts_loss = self.loss_calculator(X_ts, T_ts)
             init_ts_accuracy = self.accuracy_calculator(X_ts, T_ts)
 
@@ -504,7 +504,7 @@ class NeuralNetwork:
 
                 self.weights_update(len(X_tr))
 
-            elif isinstance(batch_size, int) and batch_size > 0:
+            elif isinstance(batch_size, int) and batch_size > 0:        #manage mini batch and sgd cases
                 perm = np.random.permutation(len(X_tr))
                 X_tr = X_tr[perm]
                 T_tr = T_tr[perm]
@@ -579,13 +579,13 @@ class NeuralNetwork:
             current_tr_loss = self.loss_calculator(X_tr, T_tr)
             current_tr_accuracy = self.accuracy_calculator(X_tr, T_tr)
             
-            if X_vl is not None:
+            if X_vl is not None:        #get loss for current epoch on vl set
                 current_vl_loss = self.loss_calculator(X_vl, T_vl)
                 vl_loss.append(current_vl_loss)
                 current_vl_accuracy = self.accuracy_calculator(X_vl, T_vl)
                 vl_accuracy.append(current_vl_accuracy)
             
-            if X_ts is not None:
+            if X_ts is not None:        #get loss for current epoch on vl set
                 current_ts_loss = self.loss_calculator(X_ts, T_ts)
                 ts_loss.append(current_ts_loss)
                 current_ts_accuracy = self.accuracy_calculator(X_ts, T_ts)
@@ -627,6 +627,7 @@ class NeuralNetwork:
 
         print(f"Early stopping at epoch: {current_epoch}" if (early_stopping_cond and patience_index == 0) else f"Max epoch reached ({max_epochs})")
 
+        #assign the best values
         if X_vl is not None:
             self.layers = copy.deepcopy(best_model_weights)
 
