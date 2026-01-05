@@ -118,8 +118,8 @@ def grid_search(X_training, T_training, input_units, config):
         nn, loss, accuracy = model_selection(trial, X_training, T_training, input_units)            #perform model selection on a specific trial configuration and get its loss
         nn_list.append(nn)
 
-        if loss is None:
-            print("Loss is None\n")
+        if loss is None or np.isnan(loss):
+            print("Loss is None or nan\n")
             continue
         
         if loss < best_vl_loss:             #if loss is better than previous best, update all the references to the best loss
