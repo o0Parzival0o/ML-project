@@ -1,7 +1,7 @@
 {
   "architecture": {
       "output_units": 4,
-      "neurons_per_layer": [[50,50,50], [64,64,64]]
+      "neurons_per_layer": [[55,55,55], [68,68,68]]
   },
   "functions": {
       "hidden": "relu",
@@ -15,22 +15,22 @@
       "search_type": "grid",
       "number_random_trials": 9,
       "learning_rate": {
-          "eta": 0.000001,
+          "eta": [0.00001, 0.00003, 0.00005],
           "min_rate": 100,
           "decay_factor": 0.0001
       },
-      "momentum": 0.9,
-      "nesterov": true,
-      "regularization": 0.0001,
+      "momentum": [0.1, 0.3, 0.5, 0.8],
+      "nesterov": false,
+      "regularization": [0.0001, 0.000001, 0.00000001],
       "batch": {
           "batch_size": "full",
           "drop_last": true
       },
       "early_stopping": {
           "enabled": true,
-          "patience": 50,
+          "patience": 75,
           "monitor": "val_loss",
-          "epsilon_loss_down": 0.001,
+          "epsilon_loss_down": 0.0001,
           "epsilon_accuracy_up": 0.002,
           "target_loss": 0.0
       },
@@ -63,6 +63,6 @@
   },
   "general": {
       "dataset_name": "CUP",
-      "seed": 42
+      "seed": null
   }
 }
