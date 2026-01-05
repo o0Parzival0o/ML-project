@@ -115,7 +115,12 @@ def grid_search(X_training, T_training, input_units, config):
     for i, trial in enumerate(trials):          #run a specific trial
         print(f"Trial {i+1}/{len(trials)} :")
 
-        nn, loss, accuracy = model_selection(trial, X_training, T_training, input_units)            #perform model selection on a specific trial configuration and get its loss
+        current_loss = float("inf")
+        index = 0
+        while current_loss == float("inf") or np.isnan(current_loss) and index < 5:                     # avoid gradient exploding due to initial weights
+            nn, loss, accuracy = model_selection(trial, X_training, T_training, input_units)            #perform model selection on a specific trial configuration and get its loss
+            current_loss = loss
+            index += 1
         nn_list.append(nn)
 
         if loss is None or np.isnan(loss):
@@ -224,7 +229,12 @@ def random_search(X_training, T_training, input_units, config):
     for i, trial in enumerate(trials):          #run a specific trial
         print(f"Trial {i+1}/{len(trials)} :")
 
-        nn, loss, accuracy = model_selection(trial, X_training, T_training, input_units)            #perform model selection on a specific trial configuration and get its loss
+        current_loss = float("inf")
+        index = 0
+        while current_loss == float("inf") or np.isnan(current_loss) and index < 5:                     # avoid gradient exploding due to initial weights
+            nn, loss, accuracy = model_selection(trial, X_training, T_training, input_units)            #perform model selection on a specific trial configuration and get its loss
+            current_loss = loss
+            index += 1
         nn_list.append(nn)
 
         if loss is None:
