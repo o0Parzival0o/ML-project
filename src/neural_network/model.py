@@ -334,7 +334,10 @@ class NeuralNetwork:
         for layer in reversed(self.layers):
             # output layer
             if layer == self.output_layer:
-                layer.bp_deltas = (target - layer.outputs) * self.d_output_activation(layer.net, self.output_activation_param)                       # delta_k
+                if self.loss_func.__name__ == "binary_crossentropy" and self.output_activation.__name__ == "sigmoid":
+                    layer.bp_deltas = target - layer.outputs
+                else:
+                    layer.bp_deltas = (target - layer.outputs) * self.d_output_activation(layer.net, self.output_activation_param)                       # delta_k
             # hidden layers
             elif layer in self.hidden_layers:
                 layer.bp_deltas = (previous_weights.T @ previous_delta) * self.d_hidden_activation(layer.net, self.hidden_activation_param)          # delta_j
