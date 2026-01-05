@@ -462,10 +462,13 @@ def hold_out_assessment(config, input_units, train_set, test_set):
 
     # retraining
     method_selection = config["validation"]["method"]
-    if method_selection == "hold_out":
-        final_model = train_final_model(best_config, X_training, T_training, X_test, T_test, input_units, epochs=best_nn.best_epoch)
-    else:
-        final_model = train_final_model(best_config, X_training, T_training, X_test, T_test, input_units, target_loss=avg_loss)
+    best_model_loss = float("inf")
+    while best_model_loss == float("inf") or np.isnan(best_model_loss):
+        if method_selection == "hold_out":
+            final_model, loss = train_final_model(best_config, X_training, T_training, X_test, T_test, input_units, epochs=best_nn.best_epoch)
+        else:
+            final_model, loss = train_final_model(best_config, X_training, T_training, X_test, T_test, input_units, target_loss=avg_loss)
+        best_model_loss = loss
 
     # model assessment
     risk, accuracy_risk, _ = evaluate_model(final_model, test_set)
