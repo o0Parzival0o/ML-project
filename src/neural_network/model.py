@@ -783,7 +783,7 @@ class NeuralNetwork:
             if plot_index >= rows * (cols - 1):
                 ax_loss.set_xlabel("Epochs")
             if plot_index % cols == 0:
-                ax_loss.set_ylabel("Loss / Validation loss" if self.vl_loss is not None else "Loss / Risk" if self.ts_loss is not None else "Loss")
+                ax_loss.set_ylabel(f"Loss / Validation loss ({self.loss_func.__name__})" if self.vl_loss is not None else f"Loss / Risk ({self.loss_func.__name__})" if self.ts_loss is not None else f"Loss ({self.loss_func.__name__})")
 
             if self.best_loss is not None:
                 if title == "best_model":
