@@ -478,10 +478,12 @@ def hold_out_assessment(config, input_units, train_set, test_set):
             final_model = train_final_model(best_config, X_training, T_training, X_test, T_test, input_units, epochs=best_nn.best_epoch)
         else:
             final_model = train_final_model(best_config, X_training, T_training, X_test, T_test, input_units, target_loss=avg_loss)
-        best_model_loss = final_model.best_loss
+        best_model_loss = final_model.best_loss                         # loss scaled
+    loss, _, _ = evaluate_model(final_model, train_set)                 # true loss scale
 
     # model assessment
-    risk, accuracy_risk, _ = evaluate_model(final_model, test_set)
+    best_model_risk = final_model.ts_loss[-1]                           # risk scaled
+    risk, accuracy_risk, _ = evaluate_model(final_model, test_set)      # true risk scale
 
     save_choice = input("Do you want to save the model? (0: No; 1: Yes)\n")
     if save_choice == "1":
@@ -500,14 +502,16 @@ def hold_out_assessment(config, input_units, train_set, test_set):
             json.dump(config, file)
         result_path = os.path.join(path, "result.txt")
         with open(result_path, "w") as file:
-            file.write(f"Date:\t\t\t{datetime.datetime.now().isoformat()}\n")
-            file.write(f"Retrain loss:\t{final_model.best_loss:.6f}\n")
+            file.write(f"Date:\t\t\t\t\t{datetime.datetime.now().isoformat()}\n")
+            file.write(f"Retrain Loss (scaled):\t{best_model_loss:.6f}\n")
+            file.write(f"Retrain Loss:\t\t\t{loss:.6f}\n")
             if final_model.best_accuracy is not None:
-                file.write(f"Retrain accuracy:\t{final_model.best_accuracy:.2%}\n")
-            file.write(f"Test Loss:\t\t{risk:.6f}\n")
+                file.write(f"Retrain Accuracy:\t\t{final_model.best_accuracy:.2%}\n")
+            file.write(f"Test Loss (scaled):\t\t{best_model_risk:.6f}\n")
+            file.write(f"Test Loss:\t\t\t\t{risk:.6f}\n")
             if accuracy_risk is not None:
-                file.write(f"Test Accuracy:\t\t{accuracy_risk:.2%}\n")
-            file.write(f"Best Epoch:\t\t{best_nn.best_epoch}")
+                file.write(f"Test Accuracy:\t\t\t\t{accuracy_risk:.2%}\n")
+            file.write(f"Best Epoch:\t\t\t\t{best_nn.best_epoch}")
 
         fig_loss = plt.figure(figsize=(5, 4))
         fig_acc = plt.figure(figsize=(5, 4))
@@ -574,9 +578,14 @@ def k_fold_assessment(k, config, input_units, train_set):
     k_folds = k
     indices = utils.get_k_fold_indices(len(train_set[0]), k_folds)
 
-    total_risk = []
+    total_loss = []
+    total_loss_scaled = []
     total_accuracy = []
+    total_risk = []
+    total_risk_scaled = []
+    total_risk_accuracy = []
     nn_list = []
+    nn_best_epoch = []
     all_fig_loss_search = []
     all_fig_acc_search = []
     # run over k folds  
@@ -598,34 +607,61 @@ def k_fold_assessment(k, config, input_units, train_set):
 
         # retraining
         method_selection = config["validation"]["method"]
-        if method_selection == "hold_out":
-            final_model = train_final_model(best_config, X_train_k, T_train_k, X_test_k, T_test_k, input_units, epochs=best_nn.best_epoch)
-        else:
-            final_model = train_final_model(best_config, X_train_k, T_train_k, X_test_k, T_test_k, input_units, target_loss=avg_loss)
+        best_model_loss = float("inf")
+        while (best_model_loss == float("inf") or np.isnan(best_model_loss)):
+            if method_selection == "hold_out":
+                final_model = train_final_model(best_config, X_train_k, T_train_k, X_test_k, T_test_k, input_units, epochs=best_nn.best_epoch)
+            else:
+                final_model = train_final_model(best_config, X_train_k, T_train_k, X_test_k, T_test_k, input_units, target_loss=avg_loss)
+            best_model_loss = final_model.best_loss                             # loss scaled
+        loss, _, _ = evaluate_model(final_model, [X_train_k, T_train_k])        # true loss scale
 
         # model assessment
-        risk, accuracy, _ = evaluate_model(final_model, [X_test_k, T_test_k])
+        best_model_risk = final_model.ts_loss[-1]                               # risk scaled
+        risk, risk_accuracy, _ = evaluate_model(final_model, [X_test_k, T_test_k])   # true loss scale
 
         print(f"Risk: {risk:.6f}")
-        if accuracy is not None:
-            print(f"(accuracy: {accuracy:.2%})\n")
+        if risk_accuracy is not None:
+            print(f"(accuracy: {risk_accuracy:.2%})\n")
 
+        total_loss.append(loss)
+        total_loss_scaled.append(best_model_loss)
+        if final_model.best_accuracy is not None:
+            total_accuracy.append(final_model.best_accuracy)
         total_risk.append(risk)
-        if accuracy is not None:
-            total_accuracy.append(accuracy)
+        total_risk_scaled.append(best_model_risk)
+        if risk_accuracy is not None:
+            total_risk_accuracy.append(risk_accuracy)
+        nn_best_epoch.append(final_model.best_epoch)
         nn_list.append(final_model)
-        
-    avg_risk = np.mean(total_risk)
-    std_risk = np.std(total_risk)
+    
+    
+    avg_loss = np.mean(total_loss)
+    std_loss = np.std(total_loss)
+    avg_loss_scaled = np.mean(total_loss_scaled)
+    std_loss_scaled = np.std(total_loss_scaled)
     if len(total_accuracy) != 0:
         avg_accuracy = np.mean(total_accuracy)
         std_accuracy = np.std(total_accuracy)
     else:
         avg_accuracy = None
         std_accuracy = None
+    avg_risk = np.mean(total_risk)
+    std_risk = np.std(total_risk)
+    avg_risk_scaled = np.mean(total_risk_scaled)
+    std_risk_scaled = np.std(total_risk_scaled)
+    if len(total_risk_accuracy) != 0:
+        avg_risk_accuracy = np.mean(total_risk_accuracy)
+        std_risk_accuracy = np.std(total_risk_accuracy)
+    else:
+        avg_risk_accuracy = None
+        std_risk_accuracy = None
+    
+    avg_best_epoch = np.mean(nn_best_epoch)
+    std_best_epoch = np.std(nn_best_epoch)
 
     # save best model of kfold only for plotting (debug)
-    best_fold_idx = np.argmin(total_risk)
+    best_fold_idx = np.argmin(total_loss)
     best_nn = nn_list[best_fold_idx]
 
     save_choice = input("Do you want to save the model? (0: No; 1: Yes)\n")
@@ -636,7 +672,7 @@ def k_fold_assessment(k, config, input_units, train_set):
         os.makedirs(path, exist_ok=True)
 
         model_path = os.path.join(path, "model.pkl")
-        final_model.save_model(model_path)
+        best_nn.save_model(model_path)
         best_config_path = os.path.join(path, "best_config.json")
         with open(best_config_path, "w") as file:
             json.dump(best_config, file)
@@ -645,18 +681,20 @@ def k_fold_assessment(k, config, input_units, train_set):
             json.dump(config, file)
         result_path = os.path.join(path, "result.txt")
         with open(result_path, "w") as file:
-            file.write(f"Date:\t\t\t{datetime.datetime.now().isoformat()}\n")
-            file.write(f"Retrain loss:\t{final_model.best_loss:.6f}\n")
-            if final_model.best_accuracy is not None:
-                file.write(f"Retrain accuracy:\t{final_model.best_accuracy:.2%}\n")
-            file.write(f"Test Loss:\t\t{avg_risk:.6f} ± {std_risk:.6f}\n")
+            file.write(f"Date:\t\t\t\t\t\t\t{datetime.datetime.now().isoformat()}\n")
+            file.write(f"Average Retrain Loss (scaled):\t{avg_loss_scaled:.6f} ± {std_loss_scaled:.6f}\n")
+            file.write(f"Average Retrain Loss:\t\t\t{avg_loss:.6f} ± {std_loss:.6f}\n")
             if avg_accuracy is not None:
-                file.write(f"Test Accuracy:\t\t{avg_accuracy:.2%} ± {std_accuracy:.2%}\n")
-            file.write(f"Best Epoch:\t\t{best_nn.best_epoch}")
+                file.write(f"Average Retrain Accuracy:\t\t{avg_accuracy:.2%} ± {std_accuracy:.2%}\n")
+            file.write(f"Average Test Loss (scaled):\t\t{avg_risk_scaled:.6f} ± {std_risk_scaled:.6f}\n")
+            file.write(f"Average Test Loss:\t\t\t\t{avg_risk:.6f} ± {std_risk:.6f}\n")
+            if avg_risk_accuracy is not None:
+                file.write(f"Average Test Accuracy:\t\t\t{avg_risk_accuracy:.2%} ± {std_risk_accuracy:.2%}\n")
+            file.write(f"Average Best Epoch:\t\t\t\t{avg_best_epoch:.1f} ± {std_best_epoch:.1f}")
         
         fig_loss = plt.figure(figsize=(5, 4))
         fig_acc = plt.figure(figsize=(5, 4))
-        best_nn.plot_metrics(fig_loss=fig_loss, fig_acc=fig_acc, title="best_model", data_type=dataset_name, save_path=path)
+        best_nn.plot_metrics(fig_loss=fig_loss, fig_acc=fig_acc, title="best_kfold_model", data_type=dataset_name, save_path=path)
         
         search_type = config["training"]["search_type"]
         for fold_idx, (fig_loss_s, fig_acc_s) in enumerate(zip(all_fig_loss_search, all_fig_acc_search)):
