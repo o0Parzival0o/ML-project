@@ -9,6 +9,35 @@ import os
 import json
 import itertools
 
+def train_model_on_ts(config,X_train,T_train,X_test,T_test,input_units,epochs,target_loss):
+    '''After evaluating model on ts, run a new training on the whole dataset to eventually improve predictions'''
+
+    if X_test is not None and T_test is not None:
+        X_train = np.concatenate((X_train,X_test), axis=0)
+        T_train = np.concatenate((T_train,T_test), axis=0)
+
+    nn = train_final_model(config,X_train,T_train,input_units=input_units,epochs=epochs,target_loss=target_loss)
+
+    save_choice = input("Do you want to save the final model trained on tr+vl+ts? (0: No; 1: Yes)\n")
+    if save_choice == "1":
+        dir_name = input("Directory name: ")
+        dir_name += "_whole_dataset"
+        dataset_name = config["general"]["dataset_name"]
+        path = f"../../model_saved/{dataset_name}/" + (f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{dir_name}" if dir_name != "" else f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}")
+        os.makedirs(path, exist_ok=True)
+
+        model_path = os.path.join(path, "model.pkl")
+        nn.save_model(model_path)
+        best_config_path = os.path.join(path, "best_config.json")
+        with open(best_config_path, "w") as file:
+            json.dump(config, file)
+        config_path = os.path.join(path, "config.json")
+        with open(config_path, "w") as file:
+            json.dump(config, file)
+
+
+    return nn
+
 
 def model_assessment(training_sets, input_units, config, test_sets=None):
     '''Depending on config, chooses betwen hold out or k fold cv assessment and estimates the risk on tests set
@@ -29,21 +58,29 @@ def model_assessment(training_sets, input_units, config, test_sets=None):
         else:
             train_set = [X_training, T_training]
             test_set = test_sets
+            X_train, T_train = train_set
+            X_test, T_test = test_set
 
-        final_model, risk, accuracy = hold_out_assessment(config, input_units, train_set, test_set)     #run assessment, get risk and accuracy
+        final_model, risk, accuracy, best_config, target_loss, epochs = hold_out_assessment(config, input_units, train_set, test_set)     #run assessment, get risk and accuracy
         print(f"Test risk: {risk:.6f}")
         if accuracy is not None:
             print(f"Test accuracy: {accuracy:.2%}")
-        return final_model, risk, accuracy
+
+        final_model_ts = train_model_on_ts(best_config,X_train,T_train,X_test,T_test,input_units,epochs=epochs,target_loss=target_loss)
+
+        return final_model_ts, risk, accuracy
     
     else:       #assessment with k fold
         num_folds = config["assessment"]["folds"] if method_assessment == "k_fold_cv" else len(X_training)
 
-        final_model, avg_risk, std_risk, avg_accuracy, std_accuracy = k_fold_assessment(num_folds, config, input_units, [X_training, T_training])       #run assessment, get risk and accuracy
+        final_model, avg_risk, std_risk, avg_accuracy, std_accuracy, best_config, target_loss, epochs = k_fold_assessment(num_folds, config, input_units, [X_training, T_training])       #run assessment, get risk and accuracy
         print(f"Average {num_folds}-fold test risk: {avg_risk:.6f} ± {std_risk:.6f}")
         if avg_accuracy is not None:
             print(f"Average {num_folds}-fold test accuracy: {avg_accuracy:.2%} ± {std_accuracy:.2%}\n")
-        return final_model, avg_risk, avg_accuracy
+
+        final_model_ts = train_model_on_ts(best_config,X_training,T_training,X_test=None,T_test=None,input_units=input_units,epochs=epochs,target_loss=target_loss)
+
+        return final_model_ts, avg_risk, avg_accuracy
 
 
 def perform_search(X_train, T_train, input_units, config):
@@ -525,7 +562,7 @@ def hold_out_assessment(config, input_units, train_set, test_set):
             fig_acc_search.savefig(f'{path}/{dataset_name}_{search_type}_search_accuracy.png', dpi=300)
             plt.close(fig_acc_search)
 
-    return final_model, risk, accuracy_risk
+    return final_model, risk, accuracy_risk, best_config, avg_loss, best_nn.best_epoch
 
 
 def k_fold_selection(k, config, input_units, train_set):
@@ -706,4 +743,4 @@ def k_fold_assessment(k, config, input_units, train_set):
                 plt.close(fig_acc_s)
 
 
-    return best_nn, avg_risk, std_risk, avg_accuracy, std_accuracy
+    return best_nn, avg_risk, std_risk, avg_accuracy, std_accuracy, best_config, avg_loss, best_nn.best_epoch

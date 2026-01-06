@@ -148,11 +148,12 @@ if __name__ == "__main__":
             
             else:
                 training_sets = [X_train, T_train]
+
                 nn, _, _ = model_assessment(training_sets, input_units, config)
 
     else:
         members_names = ["Andrea Marcheschi", "Luca Nasini", "Simone Passera"]
-        team_name = "ciao team"
+        team_name = "SimoLucaAndre"
 
         if data == "MONK":
             monk_test_data = f"../../MONK files/monks-{selected}.test"
