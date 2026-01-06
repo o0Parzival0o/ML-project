@@ -65,7 +65,7 @@ if __name__ == "__main__":
                 data_split_prop = [config["training"]["splitting"]["tr"], config["training"]["splitting"]["vl"]]
                 X_train, X_val, T_train, T_val = utils.data_splitting(X_train, T_train, data_split_prop)
 
-                nn, _, _ = launch_trial(config, [X_train, T_train], [X_val, T_val], input_units, verbose=True)
+                nn, _, _, _ = launch_trial(config, [X_train, T_train], [X_val, T_val], input_units, verbose=True)
                 
                 fig1 = plt.figure(figsize=(5, 4))
                 fig2 = plt.figure(figsize=(5, 4))
@@ -118,7 +118,7 @@ if __name__ == "__main__":
                 data_split_prop = [config["training"]["splitting"]["tr"], config["training"]["splitting"]["vl"], config["training"]["splitting"]["ts"]]
                 X_train, X_val, X_test, T_train, T_val, T_test = utils.data_splitting(X_train, T_train, data_split_prop)
 
-                nn, _, _ = launch_trial(config, [X_train, T_train], [X_val, T_val], input_units, verbose=True)
+                nn, _, _, _ = launch_trial(config, [X_train, T_train], [X_val, T_val], input_units, verbose=True)
 
                 fig1 = plt.figure(figsize=(5, 4))
                 fig2 = plt.figure(figsize=(5, 4))
@@ -201,7 +201,7 @@ if __name__ == "__main__":
                 
             latest_run = timestamps[-1]
             model_path = os.path.join(base_path, latest_run, "model.pkl")
-            
+            print(model_path)
             nn = utils.neural_network_from_file(model_path)
 
             preprocess = nn.preprocessing
