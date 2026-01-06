@@ -1,0 +1,6 @@
+Date:							2026-01-05T21:02:18.480945
+Average Retrain Loss (scaled):	0.338884 ± 0.013846
+Average Retrain Loss:			35.336755 ± 0.403793
+Average Test Loss (scaled):		0.346835 ± 0.011903
+Average Test Loss:				35.366606 ± 0.168672
+Average Best Epoch:				152.000000 ± 74.000000

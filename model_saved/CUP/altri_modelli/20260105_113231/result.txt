@@ -1,0 +1,4 @@
+Date:			2026-01-05T11:32:31.264719
+Retrain loss:	nan
+Test Loss:		nan
+Best Epoch:		562

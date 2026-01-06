@@ -1,0 +1,6 @@
+Date:					2026-01-06T01:43:15.676186
+Retrain Loss (scaled):	0.415306
+Retrain Loss:			211.990832
+Test Loss (scaled):		0.433490
+Test Loss:				207.018944
+Best Epoch:				608
