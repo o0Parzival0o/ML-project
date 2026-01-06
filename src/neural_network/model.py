@@ -13,12 +13,6 @@ class Neuron:
     """
     Represents a single neuron in the neural network.
 
-    Attributes
-    ----------
-    bias : float or None
-        Bias value of the neuron
-    weights : list of float
-        List of weight values of the neuron (one for all other neurons connected)
     """
     def __init__(self):
         self.bias = None
@@ -28,37 +22,6 @@ class NeuronLayer:
     """
     Represents a (dense) layer of neurons in the neural network.
     
-    Parameters
-    ----------
-    neurons : int
-        neurons of the layer
-        
-    Attributes
-    ----------
-    neurons : list of Neurons
-        List of Neurons in the layer
-    num_neurons : int
-        Number of neurons in the layer
-    weights : np.ndarray or None
-        Values of weights of all neurons in the layer
-    biases : np.ndarray or None
-        Value of biases of all neurons in the layer
-    inputs : np.ndarray or None
-        Inputs of the layer from feed forward
-    net : np.ndarray or None
-
-    outputs : np.ndarray or None
-        Outputs of the layer (after activation)
-    bp_deltas : np.ndarray or None
-        Deltas of the backpropagation
-    delta_weights_old : np.ndarray or None
-        Deltas of the weights of the previous epoch
-    delta_biases_old : np.ndarray or None
-        Deltas of the biases of the previous epoch
-    weights_grad_acc : np.ndarray or None
-        Gradient accumulator for weights
-    biases_grad_acc : np.ndarray or None
-        Gradient accumulator for biases
     """
     def __init__(self, neurons):
         self.neurons = [Neuron() for _ in range(neurons)]
@@ -82,98 +45,6 @@ class NeuralNetwork:
     """
     Represents a multi-layer perceptron neural network for regression or classification.
     
-    Parameters
-    ----------
-    num_inputs : int
-        Number of input units
-    num_outputs : int
-        Number of output units
-    neurons_per_layer : list of int
-        Number of units for each layers
-    training_hyperpar : dict, optional
-        All the hyperparameter (epochs, learning_rate, momentum, regularization, batch, early_stopping, etc.)
-    extractor : callable, optional
-        Function for extract initial weights and biases
-    activation : list of list, optional
-        Activation functions for hidden and output layers (with coefficients)
-    preprocessing : list, optional
-        Type of preprocessing of dataset
-    
-    Attributes
-    ----------
-    num_inputs : int
-        Number of input units
-    num_outputs : int
-        Number of output units
-    neurons_per_layer : list of int
-        Number of units for each layers
-    hidden_layers_number : int
-        Number of hidden layers
-    hidden_layers : list of NeuronLayer
-        List of all hidden layers
-    output_layer : NeuronLayer
-        Output layer
-    layers : list of NeuronLayer
-        List of all layers (hidden + output).
-    learning_rate : float
-        Current learning rate (eta)
-    orig_learning_rate : float
-        Initial learning rate (eta_0)
-    momentum : float
-        Momentum coefficent (alpha)
-    nesterov : bool
-        Choice for use of Nesterov momentum
-    regularization : float
-        Regularization (L2) coefficent (lambda)
-    preprocessing : str or None
-        Type of preprocessing ('standardization', 'rescaling' or None)
-    X_params : tuple or None
-        Patterns preprocessing parameters (mean/std or min/max)
-    T_params : tuple or None
-        Targets preprocessing parameters (mean/std or min/max)
-    hidden_activation : callable
-        Activation function for hidden layers
-    output_activation : callable
-        Activation function for output layer
-    loss_func : callable or None
-        Loss function
-    tr_loss : list of float or None
-        All loss computed on training set
-    tr_accuracy : list of float or None
-        All accuracy computed on training set
-    vl_loss : list of float or None
-        All loss computed on validation set
-    vl_accuracy : list of float or None
-        All accuracy computed on validation set
-    best_epoch : int or None
-        Epoch of the best model from early stopping
-    best_loss : float or None
-        Best lost computed
-    best_accuracy : float or None
-        Best accuracy computed
-    
-    Methods
-    -------
-    init_weights(layer, num_inputs, num_outputs)
-        Initialize weights and biases
-    feed_forward(inputs)
-        Do the feed forward of inputs through the network
-    back_prop(target)
-        Do the backpropagation
-    weights_update(batch_size)
-        Updates weights and biases with computed gradients
-    train(X_tr, T_tr, X_vl, T_vl, train_args, loss_func, early_stopping)
-        Train the network
-    predict(X)
-        Do predictions of new patterns
-    loss_calculator(X, T)
-        Compute the loss
-    accuracy_calculator(X, T)
-        Compute the accuracy (only for classification)
-    save_model(filepath)
-        Save the model on .pkl file
-    plot_metrics(fig_loss, fig_acc, rows, cols, plot_index, num_trials, changing_hyperpar, title, data_type)
-        Plot the metrics of the network
     """
     def __init__(self, num_inputs, num_outputs, neurons_per_layer, training_hyperpar=None, extractor=None, activation=[["relu", 0.], ["sigmoid", 1.]], preprocessing=[None, None, None]):
 
@@ -262,14 +133,6 @@ class NeuralNetwork:
         """
         Initialize weights and biases of the layer
 
-        Parameters
-        ----------
-        layer : NeuronLayer
-            Layer of weights and biases to be initialized
-        num_inputs : int
-            Number of input neurons
-        num_outputs : int
-            Number of outputs neurons
         """
         for neuron in layer.neurons: #use a function as a sort of random generator to create the values for bias and weights
             neuron.bias = self.extractor(fan_in=num_inputs, fan_out=num_outputs, a=(self.output_activation_param if layer == self.output_layer else self.hidden_activation_param))
@@ -294,15 +157,7 @@ class NeuralNetwork:
         """
         Propagate inputs through the network.
 
-        Parameters
-        ----------
-        inputs : np.ndarray
-            Patterns vector
 
-        Returns
-        -------
-        np.ndarray
-            Network outputs
         """
         current_inputs = inputs
 
@@ -324,10 +179,6 @@ class NeuralNetwork:
         """
         Backpropagate targets through the inputs.
 
-        Parameters
-        ----------
-        target : np.ndarray
-            Target of the current pattern
         """
         previous_delta = None
         previous_weights = None
@@ -350,10 +201,6 @@ class NeuralNetwork:
         """
         Update of the weights and biases using gradients from backpropagation (delta_w = eta * gradient + alpha * delta_w_old, w_new = w + delta_w - lambda * w)
 
-        Parameters
-        ----------
-        batch_size : int
-            Number of patterns in the (mini)batch
         """
         for layer in self.layers:
             # gradient calculation
@@ -380,37 +227,6 @@ class NeuralNetwork:
         """
         Train the entire neural network.
 
-        Parameters
-        ----------
-        X_tr : np.ndarray
-            Vector of training input data
-        T_tr : np.ndarray
-            Vector of training target
-        X_vl : np.ndarray, optional
-            Vector of validation input data
-        T_vl : np.ndarray, optimal
-            Vector of validation target
-        train_args : dict
-            Contain:
-            - "batch": "batch_size" (int or "full"), "drop_last" (bool)
-            - "epochs" (int) max epoch to reach
-        loss_func : str
-            Name of the loss function
-        early_stopping : dict
-            Contain:
-            - "enabled" (bool)
-            - "patience" (int) epochs to wait before stopping
-            - "monitor" (str) metric to monitor ("val_loss", "val_accuracy", "train_loss")
-            - "epsilon_loss_down" (float) loss relative improvement threshold
-            - "epsilon_accuracy_up" (float) accuracy relative improvement threshold
-            - "target_loss" (float) target loss for "train_loss" monitoring (used only for retraining)
-        
-        Raises
-        ------
-        ValueError
-            If monitor parameter is not valid or target_loss is missing when needed
-        TypeError
-            If batch_size is not a positive integer or "full"
         """
         batch_size = train_args["batch"]["batch_size"]
         batch_droplast = train_args["batch"]["drop_last"]
@@ -659,17 +475,6 @@ class NeuralNetwork:
         """
         Compute loss
 
-        Parameters
-        ----------
-        X : np.ndarray
-            Vector of input data
-        T : np.ndarray
-            Vector of target data
-
-        Returns
-        -------
-        float
-            Loss of all patterns
         """
         predictions = np.array([self.feed_forward(x) for x in X])
         loss = self.loss_func(predictions, T)
@@ -679,17 +484,6 @@ class NeuralNetwork:
         """
         Compute accuracy (only for classification)
 
-        Parameters
-        ----------
-        X : np.ndarray
-            Vector of input data
-        T : np.ndarray
-            Vector of target data
-
-        Returns
-        -------
-        float or None
-            Accuracy of all patterns (from 0 to 1). It is None if problem is not a classification
         """
         if self.output_activation.__name__ not in ["sigmoid", "tanh"]:
             return None
@@ -723,15 +517,6 @@ class NeuralNetwork:
         """
         Predict input data
 
-        Parameters
-        ----------
-        X : np.ndarray
-            Vector of input data
-        
-        Returns
-        -------
-        np.ndarray
-            Vector of predicted output data
         """
         O = []
         for x in X:
@@ -743,28 +528,6 @@ class NeuralNetwork:
         """
         Plot the metrics of the network
 
-        Parameters
-        ----------
-        fig_loss : plt.figure.Figure
-            Figure of loss plot
-        fig_acc : plt.figure.Figure, optional
-            Figure of accuracy plot
-        rows : int, optional
-            Number of rows for subplots
-        cols : int, optional
-            Number of cols for subplots
-        plot_index : int, optional
-            Index of the current subplot (usefull for grid_search and random_search)
-        num_trials : int, optional
-            Number of total trials for saveing figures
-        changing_hyperpar : dict, optional
-            Dictionary of hyperparameters that changed for this trial
-        title : str, optional
-            Title of the plot ("single_trial", "best_model", "grid_search", "random_search")
-        data_type : str, optional
-            Dataset name ("CUP", "MONK")
-        save_path : str, optional
-            Path for saving plots
         """
         if self.tr_loss is not None and fig_loss:
             ax_loss = fig_loss.add_subplot(rows, cols, plot_index + 1)
@@ -869,10 +632,6 @@ class NeuralNetwork:
         """
         Save the model on .pkl file
 
-        Parameters
-        ----------
-        filepath : str
-            Path to save the file
         """
         self.sync_layer_to_neurons()
         
