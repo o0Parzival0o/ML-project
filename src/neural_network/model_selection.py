@@ -390,6 +390,7 @@ def model_selection(trial_config, X_train, T_train, input_units):
         val_set = [X_val, T_val]
 
         nn, loss, accuracy,tr_loss = hold_out_selection(trial_config, input_units, train_set, val_set)          #run model selection with hold out vl
+        risk, accuracy_risk, _ = evaluate_model(nn, val_set) 
         return nn, loss, accuracy, tr_loss
 
     else:          
@@ -516,7 +517,7 @@ def hold_out_assessment(config, input_units, train_set, test_set):
         if method_selection == "hold_out":
             final_model = train_final_model(best_config, X_training, T_training, X_test, T_test, input_units, epochs=best_nn.best_epoch)
         else:
-            final_model = train_final_model(best_config, X_training, T_training, X_test, T_test, input_units, target_loss=avg_loss)
+            final_model = train_final_model(best_config, X_training, T_training, X_test, T_test, input_units, target_loss=tr_loss)
         best_model_loss = final_model.best_loss                         # loss scaled
     loss, _, _ = evaluate_model(final_model, train_set)                 # true loss scale
 
@@ -607,6 +608,8 @@ def k_fold_selection(k, config, input_units, train_set):
     # save best model of kfold only for plotting (debug)
     best_fold_idx = np.argmin(total_loss)
     best_nn = nn_list[best_fold_idx]
+
+     
 
     return best_nn, avg_loss, std_loss, avg_accuracy, std_accuracy,tr_loss
 
