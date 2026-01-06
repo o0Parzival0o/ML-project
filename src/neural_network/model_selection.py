@@ -391,6 +391,7 @@ def model_selection(trial_config, X_train, T_train, input_units):
 
         nn, loss, accuracy,tr_loss = hold_out_selection(trial_config, input_units, train_set, val_set)          #run model selection with hold out vl
         risk, accuracy_risk, _ = evaluate_model(nn, val_set) 
+        print(f"risk on vl set {risk}")
         return nn, loss, accuracy, tr_loss
 
     else:          
@@ -576,6 +577,7 @@ def k_fold_selection(k, config, input_units, train_set):
     total_loss = []
     total_accuracy = []
     nn_list = []
+    total_risk = 0.0
     # run over k folds  
     for i in range(k_folds):
         val_start, val_end = indices[i]
@@ -591,13 +593,21 @@ def k_fold_selection(k, config, input_units, train_set):
 
         nn, loss, accuracy,tr_loss = launch_trial(config, current_train_set, current_val_test_set, input_units, verbose=False)
 
+        risk_k, _, _ = evaluate_model(nn, current_val_test_set)
+        total_risk += risk_k
+
         total_loss.append(loss)
         if accuracy is not None:
             total_accuracy.append(accuracy)
         nn_list.append(nn)
+
+    
         
     avg_loss = np.mean(total_loss)
     std_loss = np.std(total_loss)
+
+    total_risk = total_risk / k 
+    print(f"kfold true risk {total_risk}")
     if len(total_accuracy) != 0:
         avg_accuracy = np.mean(total_accuracy)
         std_accuracy = np.std(total_accuracy)
